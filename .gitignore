@@ -5,6 +5,7 @@ _targets/
 
 # All output
 */out/*
+!*/*/.placeholder
 scratch/*
 
 # R files
