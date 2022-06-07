@@ -1,4 +1,4 @@
-
+source("1_fetch/src/download_nhdplus_flowlines.R")
 
 p1_targets_list <- list(
   
@@ -34,6 +34,18 @@ p1_targets_list <- list(
       select(PRMS_segid, comid_cat) %>% 
       tidyr::separate_rows(comid_cat,sep=";") %>% 
       rename(COMID = comid_cat)
+  ),
+  
+  # Use crosswalk table to fetch just the NHDv2 reaches that overlap the NHM network
+  tar_target(
+    p1_nhd_reaches_along_NHM,
+    download_nhdplus_flowlines(p1_drb_comids_segs$COMID)
+  ),
+  
+  # Use crosswalk table to fetch all NHDv2 reaches in the DRB 
+  tar_target(
+    p1_nhd_reaches,
+    download_nhdplus_flowlines(p1_drb_comids_all_tribs$COMID)
   )
 
   
