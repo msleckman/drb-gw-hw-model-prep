@@ -48,23 +48,29 @@ p1_targets_list <- list(
     download_nhdplus_flowlines(p1_drb_comids_all_tribs$COMID)
   ),
   
-  # get nhdv2 STATSGO Soil Characteristics
-  
+  # STATSGO SOIL Characteristics
+  ## get selected child items nhdv2 STATSGO Soil Characteristics
+  ## 1) Text attributes and 2) Layer attributes
   tar_target(
     selected_statsgo_sbid_children,
     item_list_children(sb_id = nhd_statsgo_parent_sbid) %>% 
       Filter(function(x){str_detect(x[['title']],'Text|Layer')},
              .)
     ),
-
+  
+  ## download selected CONUS STATSGO datasets from Science base
   tar_target(
     download_statsgo_text_layer_attr,
     lapply(selected_statsgo_sbid_children,
            function(x){sbtools::item_file_download(x$id,
-                                                   dest_dir = '1_fetch/out/statsgo')}
-           ),
+                                                   dest_dir = '1_fetch/out/statsgo',
+                                                   overwrite_file = TRUE)}
+           ) %>%
+      unlist(),
     format = 'file'
     )
+  
+  ## Combine statsgo TEXT and Layer Attributes for CAT and TOT and filter to drb
 )
   
 
