@@ -46,9 +46,27 @@ p1_targets_list <- list(
   tar_target(
     p1_nhd_reaches,
     download_nhdplus_flowlines(p1_drb_comids_all_tribs$COMID)
-  )
-
+  ),
   
+  # get nhdv2 STATSGO Soil Characteristics
+  
+  tar_target(
+    selected_statsgo_sbid_children,
+    item_list_children(sb_id = nhd_statsgo_parent_sbid) %>% 
+      Filter(function(x){str_detect(x[['title']],'Text|Layer')},
+             .)
+    ),
+
+  tar_target(
+    download_statsgo_text_layer_attr,
+    lapply(selected_statsgo_sbid_children,
+           function(x){sbtools::item_file_download(x$id,
+                                                   dest_dir = '1_fetch/out/statsgo')}
+           ),
+    format = 'file'
+    )
 )
+  
+
 
   
