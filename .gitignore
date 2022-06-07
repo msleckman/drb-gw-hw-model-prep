@@ -1,0 +1,24 @@
+# Files/directories to ignore for this pipeline
+
+# Targets directory
+_targets/
+
+# All output
+*/out/*
+!*/*/.placeholder
+scratch/*
+
+# R files
+# History files
+.Rhistory
+.Rapp.history
+
+# Session data files
+.RData
+.DS_Store
+
+# User-specific files
+.Rproj.user
+
+# Rstudio files
+.Ruserdata
