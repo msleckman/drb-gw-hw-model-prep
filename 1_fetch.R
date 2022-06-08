@@ -69,7 +69,7 @@ p1_targets_list <- list(
     lapply(p1_selected_statsgo_sbid_children,
            function(x){sbtools::item_file_download(x$id,
                                                    dest_dir = '1_fetch/out/statsgo',
-                                                   overwrite_file = FALSE)}
+                                                   overwrite_file = TRUE)}
            ) %>%
       unlist(),
     format = 'file'
@@ -80,6 +80,7 @@ p1_targets_list <- list(
     p1_statsgo_soil_df, 
     sb_read_filter_by_comids(data_path = '1_fetch/out/statsgo',
                              comid = p1_drb_comids_all_tribs$COMID,
+                             sb_comid_col = 'COMID',
                              cbind = TRUE)
   )
 )

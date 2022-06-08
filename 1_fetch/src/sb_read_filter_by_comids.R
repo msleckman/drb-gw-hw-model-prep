@@ -12,7 +12,7 @@ sb_read_filter_by_comids <- function(data_path = '1_fetch/out/statsgo', sb_comid
   
   if(!is_empty(data_zip_lst)){
   ##unzipping in same location as zipped. No subfolder created 
-  lapply(data_zip_lst, function(x) unzip(x, exdir = data_path))
+  lapply(data_zip_lst, function(x) unzip(x, exdir = data_path, overwrite = TRUE))
   }
   
   # 2) read
@@ -22,7 +22,7 @@ sb_read_filter_by_comids <- function(data_path = '1_fetch/out/statsgo', sb_comid
     stop('No txt or csv file in this data path')
   }
   ## read in + clip
-  data <- lapply(data_lst[1:4], function(x) read.csv(x, sep = ',') %>% 
+  data <- lapply(data_lst, function(x) read.csv(x, sep = ',') %>% 
                    filter(.data[[sb_comid_col]] %in% comid))
                  
   ## cbind if true
