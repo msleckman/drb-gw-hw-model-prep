@@ -3,16 +3,19 @@ Code repo to prepare groundwater and headwater-related datasets for modeling riv
 
 This repo contains a targets pipeline for compiling datasets and a snakemake workflow for extracting simulated groundwater discharge from a MODFLOW groundwater model
 
+## Extracting the catchment / reach attributes
+The scripts to compile the catchment attributes utilize an R targets pipeline that is intialized with the "_targets.r" file in the main directory.
+
 
 ## Extracting the MODFLOW outputs
-The scripts to run the MODFLOW extraction are contained within the directory "MODFLOW_extraction"
+The scripts to run the MODFLOW extraction are contained within the directory "MODFLOW_extraction." They are python scripts and utilize a Snakemake workflow.
 
 ### To run the Snakemake workflow locally:
 
 1. Install the dependencies in the `environment_MODFLOW_CONUS.yaml` file. With conda you can do this with `conda env create -f environment_MODFLOW_CONUS.yaml`
 2. Activate your conda environment `source activate mf_data_extraction`
 3. Edit the run configuration (including paths for I/O data) in the appropriate `config.yml` (either `config_MODFLOW_DRB.yml` or `config_MODFLOW_CONUS.yml`)
-4. Run Snakemake with `snakemake --configfile config_MODFLOW_CONUS.yml -s Snakefile_MODFLOW_CONUS -j1 <n>`
+4. Run Snakemake with `snakemake --configfile config_MODFLOW_CONUS.yml -s Snakefile_MODFLOW_CONUS -j1`
 
 ### To run the Snakemake Workflow on TallGrass
 1. Request a GPU allocation and start an interactive shell
