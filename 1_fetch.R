@@ -36,6 +36,10 @@ p1_targets_list <- list(
       rename(COMID = comid_cat)
   ),
   
+  ## define drb comids vector
+  tar_target(comids_drb,
+             p1_drb_comids_all_tribs$COMID),
+  
   # Use crosswalk table to fetch just the NHDv2 reaches that overlap the NHM network
   tar_target(
     p1_nhd_reaches_along_NHM,
@@ -52,7 +56,7 @@ p1_targets_list <- list(
   ## get selected child items nhdv2 STATSGO Soil Characteristics
   ## 1) Text attributes and 2) Layer attributes
   tar_target(
-    selected_statsgo_sbid_children,
+    p1_selected_statsgo_sbid_children,
     item_list_children(sb_id = nhd_statsgo_parent_sbid) %>% 
       Filter(function(x){str_detect(x[['title']],'Text|Layer')},
              .)
@@ -60,19 +64,24 @@ p1_targets_list <- list(
   
   ## download selected CONUS STATSGO datasets from Science base
   tar_target(
-    download_statsgo_text_layer_attr,
-    lapply(selected_statsgo_sbid_children,
+    p1_download_statsgo_text_layer_attr,
+    lapply(p1_selected_statsgo_sbid_children,
            function(x){sbtools::item_file_download(x$id,
                                                    dest_dir = '1_fetch/out/statsgo',
                                                    overwrite_file = TRUE)}
            ) %>%
       unlist(),
     format = 'file'
-    )
+    ),
   
   ## Combine statsgo TEXT and Layer Attributes for CAT and TOT and filter to drb
+  tar_target(
+    p1_statsgo_soil_df, 
+    sb_read_filter_by_comids(data_path = '1_fetch/out/statsgo',
+                             comid = p1_drb_comids_all_tribs$COMID,
+                             cbind = TRUE)
+  )
 )
   
-
 
   
