@@ -1,0 +1,13 @@
+archiveCode: "zell2020_wrr"
+
+subdomainCodes: ['02']
+subdomainFilesNeeded: ['models','outputs']
+otherFilesNeeded: ['Data_Subdomain.zip','modelgeoref.txt','readme.txt']
+
+nhdFilesNeeded: ['NHDSnapshot','NHDPlusCatchment','NHDPlusAttributes']
+
+networkCodes: ['NHM', 'NHDPlus'] #options include "NHM" and "NHDPlus"
+
+model_crs: 'ESRI:102039'
+
+
