@@ -1,4 +1,5 @@
 source("1_fetch/src/download_nhdplus_flowlines.R")
+source('1_fetch/src/sb_read_filter_by_comids.R')
 
 p1_targets_list <- list(
   
@@ -68,7 +69,7 @@ p1_targets_list <- list(
     lapply(p1_selected_statsgo_sbid_children,
            function(x){sbtools::item_file_download(x$id,
                                                    dest_dir = '1_fetch/out/statsgo',
-                                                   overwrite_file = TRUE)}
+                                                   overwrite_file = FALSE)}
            ) %>%
       unlist(),
     format = 'file'
