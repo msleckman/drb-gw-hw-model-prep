@@ -1,0 +1,37 @@
+import os
+
+from gw_stream_temp.combineNetworkMODFLOW import compile_catchment_discharge_csv, aggregate_catchment_discharge
+
+dictionaryDir = config['dictionaryDir']
+dictionaryModelName = config['dictionaryModelName']
+outputDir = config['outputDir']
+modelName = config['modelName']
+
+
+idxDict = {'NHM':'seg_id_nat', 'NHDPlus':'COMID'}
+
+wildcard_constraints:
+   networkCode='[^_]+'
+
+rule all:
+	input:
+		expand('{outputDir}/MODFLOW_Discharge_{networkCode}_{modelName}.feather',
+		outputDir = outputDir, networkCode = config['networkCodes'],modelName = modelName)
+
+rule compile_discharge:
+    input:
+        '{outputDir}/CompiledOutputs/drn_obs.csv',
+        expand('{dictionaryDir}/CompiledOutputs/upstream_catch_dict_{{networkCode}}_{dictionaryModelName}.npy', dictionaryDir = dictionaryDir, dictionaryModelName = dictionaryModelName)
+    output:
+        '{outputDir}/CatchmentDischarge_{networkCode}_{modelName}.feather',
+    run:
+        compile_catchment_discharge_csv(input[0],idxDict[wildcards.networkCode],input[1],output[0])		
+	
+
+rule aggregate_discharge:
+    input:
+        expand('{outputDir}/CatchmentDischarge_{networkCode}_{modelName}.feather',outputDir = outputDir, networkCode = config['networkCodes'],modelName = modelName)
+    output:
+        '{outputDir}/MODFLOW_Discharge_{networkCode}_{modelName}.feather',
+    run:
+        aggregate_catchment_discharge(input,output[0], idxDict[wildcards.networkCode])	

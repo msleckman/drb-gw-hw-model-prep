@@ -5,6 +5,7 @@ _targets/
 
 # All output
 */out/*
+*/data_*/*
 !*/*/.placeholder
 scratch/*
 
@@ -22,3 +23,9 @@ scratch/*
 
 # Rstudio files
 .Ruserdata
+
+#Snakemake files
+*/.snakemake
+
+#python cache files
+*_pycache_*
