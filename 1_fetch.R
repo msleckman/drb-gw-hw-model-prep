@@ -37,10 +37,6 @@ p1_targets_list <- list(
       rename(COMID = comid_cat)
   ),
   
-  ## define drb comids vector
-  tar_target(comids_drb,
-             p1_drb_comids_all_tribs$COMID),
-  
   # Use crosswalk table to fetch just the NHDv2 reaches that overlap the NHM network
   tar_target(
     p1_nhd_reaches_along_NHM,
