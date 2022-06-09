@@ -3,7 +3,7 @@ library(targets)
 options(tidyverse.quiet = TRUE)
 tar_option_set(packages = c("tidyverse","sbtools","sf","nhdplusTools", 'purrr')) 
 
-# dir for selected datasets from nhd statsgo
+# dir for selected datasets soil characteristics from nhd statsgo
 dir.create('1_fetch/out/statsgo', showWarnings = FALSE)
 
 source("1_fetch.R")
