@@ -77,12 +77,13 @@ p1_targets_list <- list(
   
   ## Combine statsgo TEXT and Layer Attributes for CAT and TOT and filter to drb
   tar_target(
-    p1_statsgo_soil_df, 
+    p1_statsgo_soil_df,
     sb_read_filter_by_comids(data_path = '1_fetch/out/statsgo',
                              comid = p1_drb_comids_all_tribs$COMID,
                              sb_comid_col = 'COMID',
                              selected_cols_contains = c("KFACT","KFACT_UP","NO10AVE",
-                                                        "NO4AVE","SILTAVE","CLAYAVE","SANDAVE"),
+                                                        "NO4AVE","SILTAVE","CLAYAVE",
+                                                        "SANDAVE",'WTDEP'),
                              cbind = TRUE)
   )
 )
