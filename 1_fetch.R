@@ -61,7 +61,7 @@ p1_targets_list <- list(
   
   ## download selected CONUS STATSGO datasets from Science base
   tar_target(
-    p1_download_statsgo_text_layer_attr,
+    p1_download_statsgo_text_layer_zip,
     lapply(p1_selected_statsgo_sbid_children,
            function(x){sbtools::item_file_download(x$id,
                                                    dest_dir = '1_fetch/out/statsgo',
