@@ -54,7 +54,7 @@ p1_targets_list <- list(
   ## 1) Text attributes and 2) Layer attributes
   tar_target(
     p1_selected_statsgo_sbid_children,
-    item_list_children(sb_id = nhd_statsgo_parent_sbid) %>% 
+    sbtools::item_list_children(sb_id = nhd_statsgo_parent_sbid) %>% 
       Filter(function(x){str_detect(x[['title']],'Text|Layer')},
              .)
     ),
