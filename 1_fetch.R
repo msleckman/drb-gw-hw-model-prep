@@ -46,6 +46,55 @@ p1_targets_list <- list(
   tar_target(
     p1_nhd_reaches,
     download_nhdplus_flowlines(p1_drb_comids_all_tribs$COMID)
+  ),
+  
+  # Manually download temperature site locations from ScienceBase using the
+  # commented-out code below and place the downloaded zip file in 1_fetch/in. 
+  # Note that you'll be prompted for your username and password and will need 
+  # authorization to download the temperature files while the data release is 
+  # still in process:
+  # sbtools::authenticate_sb()
+  # download_sb_file(sb_id = "623e54c4d34e915b67d83580",
+  #                 file_name = "study_monitoring_sites.zip",
+  #                 out_dir = "1_fetch/in")
+  tar_target(
+    p1_drb_temp_sites_shp,
+    {
+      file_names <- unzip(zipfile = "1_fetch/in/study_monitoring_sites.zip", 
+                          exdir = "1_fetch/out", 
+                          overwrite = TRUE)
+      grep(".shp",file_names, value = TRUE, ignore.case = TRUE)
+    },
+    format = "file"
+  ),
+  
+  # Read in temperature site locations
+  tar_target(
+    p1_drb_temp_sites_sf,
+    sf::read_sf(p1_drb_temp_sites_shp, crs = 4326)
+  ),
+  
+  # Manually download unaggregated temperature observations from ScienceBase using
+  # the commented-out code below and place the downloaded zip file in 1_fetch/in. 
+  # Note that you'll be prompted for your username and password and will need 
+  # authorization to download the temperature files while the data release is 
+  # still in process:
+  # sbtools::authenticate_sb()
+  # download_sb_file(sb_id = "623e550ad34e915b67d8366e",
+  #                 file_name = "unaggregated_temperature_observations_drb.zip",
+  #                 out_dir = "1_fetch/in")
+  tar_target(
+    p1_drb_temp_obs_csv,
+    unzip(zipfile = "1_fetch/in/unaggregated_temperature_observations_drb.zip", 
+          overwrite = TRUE, 
+          exdir = "1_fetch/out"),
+    format = "file"
+  ),
+  
+  # Read in temperature observations
+  tar_target(
+    p1_drb_temp_obs,
+    read_csv(p1_drb_temp_obs_csv, col_types = list(seg_id_nat = "c"))
   )
 
   
