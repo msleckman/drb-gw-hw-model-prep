@@ -93,7 +93,7 @@ subset_closest_nhd <- function(nhd_lines, sites){
     sf::st_nearest_points(sites, nearest_segment, pairwise = TRUE))
   
   # Find the nearest NHDv2 vertex to each point and return the
-  # 'fish distance' between the site and the nearest vertex
+  # 'bird distance' between the site and the nearest vertex
   nearest_vertex <- vertices[sf::st_nearest_feature(sites, vertices), ]
   bird_dist_to_vertex_m <- sf::st_length(
     sf::st_nearest_points(sites, nearest_vertex, pairwise = TRUE))
@@ -147,7 +147,7 @@ subset_closest_nhd <- function(nhd_lines, sites){
       # confirm that the points are listed upstream to downstream
       stopifnot(sf::st_nearest_feature(vertex_upstream, segment_as_points) == 1) 
       
-      # Calculate fish distance between the site and the top/bottom of the 
+      # Calculate 'fish distance' between the site and the top/bottom of the 
       # matched reach
       fish_dist_upstream_m <- sf::st_combine(
         segment_as_points[1:point_loc_in_segment]) %>%
