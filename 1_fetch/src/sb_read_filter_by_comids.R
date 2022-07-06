@@ -6,7 +6,7 @@ sb_read_filter_by_comids <- function(comid, data_path, sb_comid_col = 'COMID',
   #' @description function to unzip, fetch and munge datasets from Sciencebase. Built for STATSGO but generalized for ther SB datasets
   #' @param comid character string or vector of character strings containing the common identifier (COMID) of the desired flowline(s)
   #' @param data_path folder path to files downloaded from sb
-  #' @param sb_comid_col str of the the column name from the comids. Default is 'COMID' as this is typically the name of this column from ds from SB0
+  #' @param sb_comid_col str of the the column name from the comids. Default is 'COMID' as this is typically the name of this column from ds from SB.
   #' @param selected_cols_contains char vector of columns of interest from original dataset e.g. c('KFACT','KFACT_UP','NO10AVE','NO4AVE','SILTAVE','CLAYAVE','SANDAVE'). Do not include the comid id colname
   #' @param cbind if true read in files are merged by column COMID
   
