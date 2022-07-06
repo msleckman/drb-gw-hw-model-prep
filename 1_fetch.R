@@ -1,5 +1,6 @@
 source("1_fetch/src/download_nhdplus_flowlines.R")
 source('1_fetch/src/sb_read_filter_by_comids.R')
+source("1_fetch/src/download_sb_file.R")
 
 p1_targets_list <- list(
   
@@ -63,14 +64,14 @@ p1_targets_list <- list(
   tar_target(
     p1_download_statsgo_text_layer_zip,
     lapply(p1_selected_statsgo_sbid_children,
-           function(x){sbtools::item_file_download(x$id,
-                                                   dest_dir = '1_fetch/out/statsgo',
-                                                   overwrite_file = TRUE)}
+           function(x){download_sb_file(sb_id = x$id,
+                                        out_dir = '1_fetch/out/statsgo',
+                                        file_name = NULL,
+                                        overwrite_file = TRUE)}
            ) %>%
       unlist(),
-    format = 'file'
-    ),
-  
+    format = 'file'),
+
   ## Combine statsgo TEXT and Layer Attributes for CAT and TOT and filter to drb
   tar_target(
     p1_statsgo_soil_df,
