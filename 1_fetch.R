@@ -1,4 +1,6 @@
 source("1_fetch/src/download_nhdplus_flowlines.R")
+source('1_fetch/src/sb_read_filter_by_comids.R')
+source("1_fetch/src/download_sb_file.R")
 
 p1_targets_list <- list(
   
@@ -37,7 +39,7 @@ p1_targets_list <- list(
     p1_nhd_reaches,
     download_nhdplus_flowlines(p1_drb_comids_all_tribs$COMID)
   ),
-  
+
   # Manually download temperature site locations from ScienceBase using the
   # commented-out code below and place the downloaded zip file in 1_fetch/in. 
   # Note that you'll be prompted for your username and password and will need 
@@ -85,9 +87,39 @@ p1_targets_list <- list(
   tar_target(
     p1_drb_temp_obs,
     read_csv(p1_drb_temp_obs_csv, col_types = list(seg_id_nat = "c"))
+  ),
+  
+  # STATSGO SOIL Characteristics
+  ## get selected child items nhdv2 STATSGO Soil Characteristics
+  ## 1) Text attributes and 2) Layer attributes
+  tar_target(
+    p1_selected_statsgo_sbid_children,
+    sbtools::item_list_children(sb_id = nhd_statsgo_parent_sbid) %>% 
+      Filter(function(x){str_detect(x[['title']],'Text|Layer')},
+             .)
+    ),
+  
+  ## download selected CONUS STATSGO datasets from Science base
+  tar_target(
+    p1_download_statsgo_text_layer_zip,
+    lapply(p1_selected_statsgo_sbid_children,
+           function(x){download_sb_file(sb_id = x$id,
+                                        out_dir = '1_fetch/out/statsgo',
+                                        file_name = NULL,
+                                        overwrite_file = TRUE)}
+           ) %>%
+      unlist(),
+    format = 'file'),
+
+  ## Combine statsgo TEXT and Layer Attributes for CAT and TOT and filter to drb
+  tar_target(
+    p1_statsgo_soil_df,
+    sb_read_filter_by_comids(data_path = '1_fetch/out/statsgo',
+                             comid = p1_drb_comids_all_tribs$COMID,
+                             sb_comid_col = 'COMID',
+                             selected_cols_contains = c("KFACT","KFACT_UP","NO10AVE",
+                                                        "NO4AVE","SILTAVE","CLAYAVE",
+                                                        "SANDAVE",'WTDEP'),
+                             cbind = TRUE)
   )
-
-  
 )
-
-  
