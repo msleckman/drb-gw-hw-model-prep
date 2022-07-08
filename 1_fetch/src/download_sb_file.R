@@ -33,7 +33,6 @@ download_sb_file <- function(sb_id, out_dir, file_name = NULL, overwrite_file = 
           
           message(paste('Downloading', file_name, 'from:', query))
           
-          out_path <- file.path(out_dir, file_name)
           httr::GET(query,httr::write_disk(out_path, overwrite=TRUE), httr::progress())
         }
       )
