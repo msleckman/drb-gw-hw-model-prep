@@ -45,19 +45,19 @@ p1_targets_list <- list(
   # Note that you'll be prompted for your username and password and will need 
   # authorization to download the temperature files while the data release is 
   # still in process:
-  sbtools::authenticate_sb()
-  tryCatch(
-  download_sb_file(sb_id = "623e54c4d34e915b67d83580",
-                  file_name = "study_monitoring_sites.zip",
-                  out_dir = "1_fetch/in"),
-  error = function(e){
-  sb_str_format_url <- 'https://www.sciencebase.gov/catalogMaps/mapping/ows/%s?service=wfs&request=GetFeature&typeName=sb:%s&outputFormat=shape-zip&version=1.0.0'
-  sb_id <- "623e54c4d34e915b67d83580"
-  file_name <- "study_monitoring_sites"
-  httr::GET(sprintf(sb_str_format_url,sb_id, file_name),
-            httr::write_disk("1_fetch/in/study_monitoring_sites.zip", overwrite=TRUE), httr::progress())
-  }
-  )
+  # sbtools::authenticate_sb()
+  # tryCatch(
+  # download_sb_file(sb_id = "623e54c4d34e915b67d83580",
+  #                 file_name = "study_monitoring_sites.zip",
+  #                 out_dir = "1_fetch/in"),
+  # error = function(e){
+  # sb_str_format_url <- 'https://www.sciencebase.gov/catalogMaps/mapping/ows/%s?service=wfs&request=GetFeature&typeName=sb:%s&outputFormat=shape-zip&version=1.0.0'
+  # sb_id <- "623e54c4d34e915b67d83580"
+  # file_name <- "study_monitoring_sites"
+  # httr::GET(sprintf(sb_str_format_url,sb_id, file_name),
+  #           httr::write_disk("1_fetch/in/study_monitoring_sites.zip", overwrite=TRUE), httr::progress())
+  # }
+  # )
   
   tar_target(
     p1_drb_temp_sites_shp,
