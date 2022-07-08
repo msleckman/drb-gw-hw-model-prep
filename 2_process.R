@@ -21,6 +21,21 @@ p2_targets_list <- list(
     estimate_mean_width(p1_nhd_reaches, 
                         estimation_method = 'nwis',
                         network_pos_variable = 'arbolate_sum')
+  ),
+  
+  # Compile river-dl input drivers at NHDv2 resolution, including river 
+  # width (meters), slope (unitless), and min/max elevation (transformed
+  # to meters from cm)
+  tar_target(
+    p2_input_drivers_nhd,
+    p2_nhd_reaches_w_width %>%
+      sf::st_drop_geometry() %>%
+      mutate(COMID = as.character(comid),
+             min_elev_m = minelevsmo/100, 
+             max_elev_m = maxelevsmo/100) %>%
+      left_join(p1_drb_comids_all_tribs, by = "COMID") %>%
+      select(COMID, segidnat, PRMS_segid, est_mean_width_m, slope, lengthkm,
+             min_elev_m, max_elev_m) 
   )
   
 )
