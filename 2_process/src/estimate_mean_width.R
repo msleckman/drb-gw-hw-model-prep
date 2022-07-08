@@ -131,26 +131,27 @@ estimate_mean_width <- function(nhd_lines, buffer_dist_m = 500, estimation_metho
                                        fit_qe_ma$r.squared))
     
     # apply regression coefficients to predict width across nhdv2 reaches
+    # width = a * (arb_sum^b)
     if(network_pos_variable == "arbolate_sum"){
-      slope_arbsum <- width_fits$slope[width_fits$network_pos_variable == "arbolate_sum"]
-      int_arbsum <- width_fits$intercept[width_fits$network_pos_variable == "arbolate_sum"]
+      a_coeff_arbsum <- 10^width_fits$intercept[width_fits$network_pos_variable == "arbolate_sum"]
+      b_coeff_arbsum <- width_fits$slope[width_fits$network_pos_variable == "arbolate_sum"]
       
       nhd_lines_out <- nhd_lines %>%
-        mutate(est_mean_width_m = arbolatesu * slope_arbsum + int_arbsum)
+        mutate(est_width_m = a_coeff_arbsum * (arbolatesu^b_coeff_arbsum))
     }
     if(network_pos_variable == "upstream_area"){
-      slope_totda <- width_fits$slope[width_fits$network_pos_variable == "upstream_area"]
-      int_totda <- width_fits$intercept[width_fits$network_pos_variable == "upstream_area"]
+      a_coeff_totda <- 10^width_fits$intercept[width_fits$network_pos_variable == "upstream_area"]
+      b_coeff_totda <- width_fits$slope[width_fits$network_pos_variable == "upstream_area"]
       
       nhd_lines_out <- nhd_lines %>%
-        mutate(est_mean_width_m = totdasqkm * slope_totda + int_totda)
+        mutate(est_width_m = a_coeff_totda * (totdasqkm^b_coeff_totda))
     }
     if(network_pos_variable == "ma_flow"){
-      slope_qe_ma <- width_fits$slope[width_fits$network_pos_variable == "ma_flow"]
-      int_qe_ma <- width_fits$intercept[width_fits$network_pos_variable == "ma_flow"]
+      a_coeff_qema <- 10^width_fits$intercept[width_fits$network_pos_variable == "ma_flow"]
+      b_coeff_qema <- width_fits$slope[width_fits$network_pos_variable == "ma_flow"]
       
       nhd_lines_out <- nhd_lines %>%
-        mutate(est_mean_width_m = qe_ma * slope_qe_ma + int_qe_ma)
+        mutate(est_width_m = a_coeff_qema * ((qe_ma * 0.0283168)^b_coeff_qema))
     }
   }    
     
