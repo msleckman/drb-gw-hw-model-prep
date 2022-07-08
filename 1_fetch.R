@@ -1,6 +1,7 @@
 source("1_fetch/src/download_nhdplus_flowlines.R")
 source('1_fetch/src/sb_read_filter_by_comids.R')
 source("1_fetch/src/download_sb_file.R")
+source("1_fetch/src/download_file.R")
 
 p1_targets_list <- list(
   
@@ -87,6 +88,21 @@ p1_targets_list <- list(
   tar_target(
     p1_drb_temp_obs,
     read_csv(p1_drb_temp_obs_csv, col_types = list(seg_id_nat = "c"))
+  ),
+  
+  # Download ref-gages v0.6 to help QC matching NWIS sites to NHDv2 flowlines
+  tar_target(
+    p1_ref_gages_geojson,
+    download_file(url = 'https://github.com/internetofwater/ref_gages/releases/download/v0.6/usgs_nldi_gages.geojson',
+                  fileout = "1_fetch/out/ref_gages.geojson",
+                  mode = "wb", quiet = TRUE)
+  ),
+  
+  # Read in ref-gages v0.6 as an sf object
+  tar_target(
+    p1_ref_gages_sf,
+    sf::st_read(p1_ref_gages_geojson, quiet = TRUE) %>%
+      mutate(COMID_refgages = as.character(nhdpv2_COMID))
   ),
   
   # STATSGO SOIL Characteristics
