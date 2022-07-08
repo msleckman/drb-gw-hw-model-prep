@@ -33,9 +33,10 @@ p2_targets_list <- list(
       sf::st_drop_geometry() %>%
       mutate(COMID = as.character(comid),
              min_elev_m = minelevsmo/100, 
-             max_elev_m = maxelevsmo/100) %>%
+             max_elev_m = maxelevsmo/100,
+             slope = if_else(slope == -9998, NA_real_,slope)) %>%
       left_join(p1_drb_comids_all_tribs, by = "COMID") %>%
-      select(COMID, segidnat, PRMS_segid, est_mean_width_m, slope, lengthkm,
+      select(COMID, segidnat, PRMS_segid, est_width_m, slope, lengthkm,
              min_elev_m, max_elev_m) 
   )
   
