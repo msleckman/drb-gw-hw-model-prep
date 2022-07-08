@@ -8,20 +8,24 @@
 #' to estimate NHDflowline widths? valid options include "nwis".
 #' @param network_pos_variable character string; what NHDPlusv2 attribute
 #' should be used to build an empirical regression that predicts mean width?
-#' Defaults to "arbolate_sum". Other valid entries are "upstream_area" and
-#' "ma_flow", which is the gage-adjusted mean annual flow for a given COMID
-#' as indicated by the value-added attribute QE_MA.
+#' Valid entries are "arbolate_sum", "upstream_area" and "ma_flow", which is 
+#' the gage-adjusted mean annual flow for a given COMID as indicated by the 
+#' value-added attribute QE_MA.
+#' @param ref_gages sf object representing the ref-gages dataset, downloaded from
+#' https://github.com/internetofwater/ref_gages. ref_gages should contain the
+#' columns provider_id, name, provider, and COMID_refgages. Defaults to NULL,
+#' however, estimation_method = 'nwis' requires ref_gages as an input.
 #' 
-estimate_mean_width <- function(nhd_lines, 
-                                buffer_dist_m = 500, 
-                                estimation_method = 'nwis', 
-                                network_pos_variable = 'arbolate_sum'){
+estimate_mean_width <- function(nhd_lines, buffer_dist_m = 500, estimation_method, 
+                                network_pos_variable, ref_gages = NULL){
   
   # Check that user entries match expected inputs
   stopifnot("Value provided for estimation_method is not a valid entry" =
               estimation_method %in% c("nwis"))
   stopifnot("Value provided for network_pos_variable is not a valid entry" =
               network_pos_variable %in% c("arbolate_sum","upstream_area","ma_flow"))
+  stopifnot("estimation_method = 'nwis' requires ref_gages as an input" = 
+              estimation_method == "nwis" & !is.null(ref_gages))
   
   # 1) One approach is to estimate width using an empirical relationship
   # between measured width and upstream area that is developed using
@@ -34,9 +38,11 @@ estimate_mean_width <- function(nhd_lines,
     nwis_sites <- dataRetrieval::whatNWISsites(bBox = sf::st_bbox(nhd_lines),
                                                parameterCd = "00060")
     
+    # Format nwis sites and retain those that are stream sites
     nwis_sites_sf <- nwis_sites %>% 
       sf::st_as_sf(coords = c('dec_long_va','dec_lat_va'), crs = 4269) %>%
-      sf::st_transform(st_crs(nhd_lines))
+      sf::st_transform(st_crs(nhd_lines)) %>%
+      filter(site_tp_cd %in% c("ST","ST-TS"))
     
     # The bounding box approach above returns more sites than we're
     # interested in, omit sites that aren't within some distance of
@@ -46,13 +52,41 @@ estimate_mean_width <- function(nhd_lines,
                     .predicate = st_is_within_distance,
                     dist = units::set_units(buffer_dist_m, m))
 
-    # Join nwis sites to nearest nhd flowline
-    nwis_sites_snapped <- nwis_sites_along_nhd %>%
+    # Join nwis sites to nearest nhd flowline 
+    nwis_sites_nearest_nhd <- nwis_sites_along_nhd %>%
       sf::st_transform(st_crs(nhd_lines)) %>%
-      sf::st_join(y = nhd_lines, join = st_nearest_feature)
+      sf::st_join(y = nhd_lines, join = st_nearest_feature) %>%
+      mutate(COMID_nearest = as.character(comid)) %>%
+      select(c(agency_cd:queryTime, COMID_nearest))
+    
+    # Compare nearest flowline with value in ref-gages. If site is 
+    # included in ref-gages, defer to ref-gages COMID assignment. 
+    # Otherwise, use nearest COMID identified in previous step. 
+    nwis_sites_snapped <- nwis_sites_nearest_nhd %>%
+      left_join(y = ref_gages %>%
+                  mutate(site_no = stringr::str_replace(provider_id, "USGS-","")) %>%
+                  sf::st_drop_geometry() %>%
+                  select(site_no, COMID_refgages),
+                by = c("site_no")) %>%
+      mutate(COMID = if_else(!is.na(COMID_refgages), COMID_refgages, COMID_nearest)) %>%
+      select(c(agency_cd:queryTime, COMID))
+    
+    # Join snapped NWIS sites to NHD attributes using COMID 
+    # identified in previous step.
+    nwis_sites_w_attr <- nwis_sites_snapped %>%
+      left_join(y = nhd_lines %>%
+                  sf::st_drop_geometry() %>%
+                  mutate(COMID = as.character(comid)) %>%
+                  select(COMID, gnis_name, arbolatesu, totdasqkm, lengthkm, qe_ma, 
+                         streamorde, streamcalc),
+                by = "COMID") %>%
+      # only retain sites snapped to dendritic river segments since
+      # divergent reaches may have smaller/larger widths than
+      # would be expected by their upstream length or area
+      filter(streamorde == streamcalc)
     
     # Download width measurements from NWIS
-    nwis_widths <- nwis_sites_snapped %>%
+    nwis_widths <- nwis_sites_w_attr %>%
       sf::st_drop_geometry() %>%
       split(.,.$site_no) %>%
       lapply(., function(x){
@@ -72,14 +106,18 @@ estimate_mean_width <- function(nhd_lines,
     # discharge (NHDPlus attribute qe_ma)
     message(sprintf(
       paste0("Estimating width for NHDPlusv2 flowlines based on empirical fit ",
-             "between NWIS measurements and attribute %s..."), network_pos_variable))
+             "between NWIS measurements and attribute %s. The range of widths ",
+             "represented in this relationship is %s - %s meters"), 
+      network_pos_variable, round(min(nwis_widths$width_m),1), round(max(nwis_widths$width_m),0)))
     
     nwis_sites_w_width <- nwis_widths %>%
-      left_join(nwis_sites_snapped, by = "site_no")
+      left_join(nwis_sites_w_attr, by = "site_no") %>%
+      mutate(ma_flow_m3s = qe_ma * 0.0283168)
       
+    # fit and summarize empirical relationships
     fit_arbsum <- summary(lm(log10(width_m) ~ log10(arbolatesu), data = nwis_sites_w_width))
     fit_totda <- summary(lm(log10(width_m) ~ log10(totdasqkm), data = nwis_sites_w_width))
-    fit_qe_ma <- summary(lm(log10(width_m) ~ log10(qe_ma), data = nwis_sites_w_width))
+    fit_qe_ma <- summary(lm(log10(width_m) ~ log10(ma_flow_m3s), data = nwis_sites_w_width))
     
     width_fits <- tibble(network_pos_variable = c('arbolate_sum','upstream_area','ma_flow'),
                          slope = c(fit_arbsum$coefficients[2],
@@ -92,6 +130,7 @@ estimate_mean_width <- function(nhd_lines,
                                        fit_totda$r.squared, 
                                        fit_qe_ma$r.squared))
     
+    # apply regression coefficients to predict width across nhdv2 reaches
     if(network_pos_variable == "arbolate_sum"){
       slope_arbsum <- width_fits$slope[width_fits$network_pos_variable == "arbolate_sum"]
       int_arbsum <- width_fits$intercept[width_fits$network_pos_variable == "arbolate_sum"]

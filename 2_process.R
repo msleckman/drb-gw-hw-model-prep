@@ -20,7 +20,8 @@ p2_targets_list <- list(
     p2_nhd_reaches_w_width,
     estimate_mean_width(p1_nhd_reaches, 
                         estimation_method = 'nwis',
-                        network_pos_variable = 'arbolate_sum')
+                        network_pos_variable = 'arbolate_sum',
+                        ref_gages = p1_ref_gages_sf)
   ),
   
   # Compile river-dl input drivers at NHDv2 resolution, including river 
