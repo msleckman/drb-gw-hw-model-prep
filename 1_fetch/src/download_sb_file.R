@@ -20,7 +20,8 @@ download_sb_file <- function(sb_id, out_dir, file_name = NULL, overwrite_file = 
         ## Catching error if file_name does not output from item_file_download
         error = function(e){
           sb_str_format_url <- 'https://www.sciencebase.gov/catalogMaps/mapping/ows/%s?service=wfs&request=GetFeature&typeName=sb:%s&outputFormat=shape-zip&version=1.0.0'
-          sb_str_format_url_fct <- 'https://www.sciencebase.gov/catalog/file/get/%s?facet=%s'
+          ## sb url with facet defined - optional alt. commenting out for now. Consider using at a later point
+          # sb_str_format_url_fct <- 'https://www.sciencebase.gov/catalog/file/get/%s?facet=%s'
           
           # if else depending on file name. Query cannot have *zip ext.
           query <- ifelse(
