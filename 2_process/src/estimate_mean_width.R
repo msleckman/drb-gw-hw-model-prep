@@ -5,11 +5,11 @@
 #' @param buffer_dist_m integer; look for NWIS sites within this distance
 #' in meters. Defaults to 500 m.
 #' @param estimation_method character string; what method should be used 
-#' to estimate NHDflowline widths? valid options include "nwis".
-#' @param network_pos_variable character string; what NHDPlusv2 attribute
-#' should be used to build an empirical regression that predicts mean width?
-#' Valid entries are "arbolate_sum", "upstream_area" and "ma_flow", which is 
-#' the gage-adjusted mean annual flow for a given COMID as indicated by the 
+#' to estimate NHDflowline widths? valid options include "nwis" and "raymond2012".
+#' @param network_pos_variable character string; if estimation_method is 'nwis',
+#' what NHDPlusv2 attribute should be used to build an empirical regression that
+#' predicts mean width? Valid entries are "arbolate_sum", "upstream_area" and "ma_flow", 
+#' which is the gage-adjusted mean annual flow for a given COMID as indicated by the 
 #' value-added attribute QE_MA.
 #' @param ref_gages sf object representing the ref-gages dataset, downloaded from
 #' https://github.com/internetofwater/ref_gages. ref_gages should contain the
@@ -153,9 +153,22 @@ estimate_mean_width <- function(nhd_lines, buffer_dist_m = 500, estimation_metho
       nhd_lines_out <- nhd_lines %>%
         mutate(est_width_m = a_coeff_qema * ((qe_ma * 0.0283168)^b_coeff_qema))
     }
-  }    
+  }
+  
+  # 2) Another approach is to estimate width using the empirical relationship
+  # between synthesized measured widths and discharge presented in Raymond et
+  # al. 2012, https://doi.org/10.1215/21573689-1597669. This dataset likely
+  # skews more toward smaller streams and rivers compared to NWIS measurements.
+  if(estimation_method == 'raymond2012'){
+    a_coeff_raymond <- 12.88
+    b_coeff_raymond <- 0.42
     
-    return(nhd_lines_out)
+    nhd_lines_out <- nhd_lines %>%
+      mutate(est_width_m = a_coeff_raymond * ((qe_ma * 0.0283168)^b_coeff_raymond))
+    
+  }
+  
+  return(nhd_lines_out)
 
 }
 
