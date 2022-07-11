@@ -36,8 +36,15 @@ p2_targets_list <- list(
              max_elev_m = maxelevsmo/100,
              slope = if_else(slope == -9998, NA_real_,slope)) %>%
       left_join(p1_drb_comids_all_tribs, by = "COMID") %>%
-      select(COMID, segidnat, PRMS_segid, est_width_m, slope, lengthkm,
-             min_elev_m, max_elev_m) 
+      # calculate length-weighted average slope for NHDv2 reaches associated
+      # with each NHM reach. For simplicity, weight by the reach length rather
+      # than another value-added attribute, slopelenkm, which represents the
+      # length over which the NHDv2 attribute slope was computed.
+      group_by(segidnat) %>%
+      mutate(slope_len_wtd_mean = weighted.mean(x = slope, w = lengthkm, na.rm = TRUE)) %>%
+      ungroup() %>%
+      select(COMID, segidnat, PRMS_segid, est_width_m, slope, slopelenkm, 
+             slope_len_wtd_mean, lengthkm, min_elev_m, max_elev_m) 
   )
   
 )
