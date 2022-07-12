@@ -12,12 +12,11 @@ download_sb_file <- function(sb_id, out_dir, file_name = NULL, overwrite_file = 
       out_path = file.path(out_dir, file_name)
       tryCatch(
         # Get the data from ScienceBase:
-        sbtools::item_file_download(sb_id = sb_id,
+        {sbtools::item_file_download(sb_id = sb_id,
                                     names = file_name,
                                     destinations = out_path,
-                                    overwrite_file = overwrite_file),
-        
-        ## Catching error if file_name does not output from item_file_download
+                                    overwrite_file = overwrite_file)},
+        # Catching error if file_name does not output from item_file_download
         error = function(e){
           sb_str_format_url <- 'https://www.sciencebase.gov/catalogMaps/mapping/ows/%s?service=wfs&request=GetFeature&typeName=sb:%s&outputFormat=shape-zip&version=1.0.0'
           ## sb url with facet defined - optional alt. commenting out for now. Consider using at a later point
@@ -31,9 +30,9 @@ download_sb_file <- function(sb_id, out_dir, file_name = NULL, overwrite_file = 
                     substr(file_name, start = 1, stop = nchar(file_name))),
             sprintf(sb_str_format_url, sb_id, file_name))
           
-          message(paste('Downloading', file_name, 'from:', query))
+          message(paste('Instead, downloading', file_name, 'from:', query))
           
-          httr::GET(query,httr::write_disk(out_path, overwrite=TRUE), httr::progress())
+          httr::GET(query,httr::write_disk(out_path, overwrite=TRUE))
         }
       )
         
