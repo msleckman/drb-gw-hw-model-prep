@@ -30,7 +30,7 @@ download_sb_file <- function(sb_id, out_dir, file_name = NULL, overwrite_file = 
                     substr(file_name, start = 1, stop = nchar(file_name))),
             sprintf(sb_str_format_url, sb_id, file_name))
           
-          message(paste('Instead, downloading', file_name, 'from:', query))
+          message(paste('Bypassing by downloading', file_name, 'directly from:', query))
           
           httr::GET(query,httr::write_disk(out_path, overwrite=TRUE))
         }
