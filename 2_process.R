@@ -1,5 +1,6 @@
 source("2_process/src/subset_closest_nhd.R")
 source("2_process/src/estimate_mean_width.R")
+source("2_process/src/write_feather.R")
 
 p2_targets_list <- list(
 
@@ -60,6 +61,14 @@ p2_targets_list <- list(
       left_join(y = p2_input_drivers_prms, by = "segidnat") %>%
       select(COMID, segidnat, PRMS_segid, est_width_m, slope, slopelenkm, slope_len_wtd_mean, 
              lengthkm, min_elev_m, max_elev_m, seg_elev, seg_slope, seg_width) 
+  ),
+  
+  # Save river-dl input drivers at NHDv2 resolution as a feather file
+  tar_target(
+    p2_input_drivers_nhd_feather,
+    write_feather(p2_input_drivers_nhd, "2_process/out/riverdl_inputs_nhdv2.feather"),
+    format = "file"
   )
+  
   
 )
