@@ -24,6 +24,18 @@ p2_targets_list <- list(
                         ref_gages = p1_ref_gages_sf)
   ),
   
+  # Pull static segment attributes from PRMS SNTemp model driver data
+  tar_target(
+    p2_input_drivers_prms,
+    p1_sntemp_input_output %>%
+      group_by(seg_id_nat) %>%
+      summarize(seg_elev = unique(seg_elev),
+                seg_slope = unique(seg_slope),
+                seg_width = mean(seg_width, na.rm = TRUE)) %>%
+      mutate(segidnat = as.character(seg_id_nat)) %>%
+      select(segidnat, seg_elev, seg_slope, seg_width)
+  ),
+  
   # Compile river-dl input drivers at NHDv2 resolution, including river 
   # width (meters), slope (unitless), and min/max elevation (transformed
   # to meters from cm)
@@ -34,8 +46,9 @@ p2_targets_list <- list(
       mutate(COMID = as.character(comid),
              min_elev_m = minelevsmo/100, 
              max_elev_m = maxelevsmo/100,
-             slope = if_else(slope == -9998, NA_real_,slope)) %>%
-      left_join(p1_drb_comids_all_tribs, by = "COMID") %>%
+             slope = if_else(slope == -9998, NA_real_, slope)) %>%
+      # add NHM segment identifier segidnat
+      left_join(y = p1_drb_comids_all_tribs, by = "COMID") %>%
       # calculate length-weighted average slope for NHDv2 reaches associated
       # with each NHM reach. For simplicity, weight by the reach length rather
       # than another value-added attribute, slopelenkm, which represents the
@@ -43,8 +56,10 @@ p2_targets_list <- list(
       group_by(segidnat) %>%
       mutate(slope_len_wtd_mean = weighted.mean(x = slope, w = lengthkm, na.rm = TRUE)) %>%
       ungroup() %>%
-      select(COMID, segidnat, PRMS_segid, est_width_m, slope, slopelenkm, 
-             slope_len_wtd_mean, lengthkm, min_elev_m, max_elev_m) 
+      # join select attributes from PRMS-SNTemp
+      left_join(y = p2_input_drivers_prms, by = "segidnat") %>%
+      select(COMID, segidnat, PRMS_segid, est_width_m, slope, slopelenkm, slope_len_wtd_mean, 
+             lengthkm, min_elev_m, max_elev_m, seg_elev, seg_slope, seg_width) 
   )
   
 )
