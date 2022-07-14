@@ -55,12 +55,15 @@ p2_targets_list <- list(
       # than another value-added attribute, slopelenkm, which represents the
       # length over which the NHDv2 attribute slope was computed.
       group_by(segidnat) %>%
-      mutate(slope_len_wtd_mean = weighted.mean(x = slope, w = lengthkm, na.rm = TRUE)) %>%
+      mutate(slope_len_wtd_mean = weighted.mean(x = slope, w = lengthkm, na.rm = TRUE),
+             seg_width_max = max(est_width_m, na.rm = TRUE), 
+             seg_elev_min = min(min_elev_m, na.rm = TRUE)) %>%
       ungroup() %>%
       # join select attributes from PRMS-SNTemp
       left_join(y = p2_input_drivers_prms, by = "segidnat") %>%
       select(COMID, segidnat, PRMS_segid, est_width_m, slope, slopelenkm, slope_len_wtd_mean, 
-             lengthkm, min_elev_m, max_elev_m, seg_elev, seg_slope, seg_width) 
+             lengthkm, min_elev_m, max_elev_m, seg_elev, seg_slope, seg_width, seg_width_max,
+             seg_elev_min) 
   ),
   
   # Save river-dl input drivers at NHDv2 resolution as a feather file
