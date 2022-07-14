@@ -10,9 +10,11 @@ source("1_fetch.R")
 source("2_process.R")
 
 # Define the url for the NHGFv1 to NHDv2 crosswalk 
-# see https://github.com/USGS-R/drb-network-prep/commit/614177cc96ed955db364dc0a1dc7d03adffbd33b
+# Note that there are different versions of the crosswalk table that might be best suited
+# to different use cases (e.g. retain divergences? retain zero-area flowlines?)
+# see https://github.com/USGS-R/drb-network-prep/commit/3637931f5a17469a4234eaed3d20ed44ba45958d
 GFv1_NHDv2_xwalk_url <- paste0("https://raw.githubusercontent.com/USGS-R/drb-network-prep/",
-                               "614177cc96ed955db364dc0a1dc7d03adffbd33b",
+                               "3637931f5a17469a4234eaed3d20ed44ba45958d",
                                "/2_process/out/GFv1_NHDv2_xwalk.csv")
 
 
