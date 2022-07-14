@@ -2,6 +2,7 @@ source("1_fetch/src/download_nhdplus_flowlines.R")
 source('1_fetch/src/sb_read_filter_by_comids.R')
 source("1_fetch/src/download_sb_file.R")
 source("1_fetch/src/download_file.R")
+source("1_fetch/src/read_netcdf.R")
 
 p1_targets_list <- list(
   
@@ -88,6 +89,34 @@ p1_targets_list <- list(
   tar_target(
     p1_drb_temp_obs,
     read_csv(p1_drb_temp_obs_csv, col_types = list(seg_id_nat = "c"))
+  ),
+  
+  # Manually download PRMS-SNTemp model driver data from ScienceBase 
+  # using the commented-out code below and place the download zip file in 
+  # 1_fetch/in. Note that you'll be prompted for your username and password
+  # and will need authorization to download the model driver data while the 
+  # data release is still in process:
+  #sbtools::authenticate_sb()
+  #download_sb_file(sb_id = "623e5587d34e915b67d83806",
+  #                 file_name = "uncal_sntemp_input_output.nc.zip",
+  #                 out_dir = "1_fetch/in")
+  tar_target(
+    p1_sntemp_input_output_zip,
+    "1_fetch/in/uncal_sntemp_input_output.nc.zip",
+    format = "file"
+  ),
+  tar_target(
+    p1_sntemp_input_output_nc,
+    unzip(zipfile = p1_sntemp_input_output_zip, 
+          overwrite = TRUE, 
+          exdir = "1_fetch/out"),
+    format = "file"
+  ),
+  
+  # Read in PRMS-SNTemp model driver data
+  tar_target(
+    p1_sntemp_input_output,
+    read_netcdf(p1_sntemp_input_output_nc)
   ),
   
   # Download ref-gages v0.6 to help QC matching NWIS sites to NHDv2 flowlines
