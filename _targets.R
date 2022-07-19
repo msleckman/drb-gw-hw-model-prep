@@ -20,6 +20,9 @@ GFv1_NHDv2_xwalk_url <- paste0("https://raw.githubusercontent.com/USGS-R/drb-net
 # pulled from https://www.sciencebase.gov/catalog/item/5728d6ace4b0b13d3918a992
 nhd_statsgo_parent_sbid <- '5728d6ace4b0b13d3918a992'
 
+drb_huc8s <- c("02040101","02040102","02040103","02040104","02040105","02040106",
+               "02040201","02040202","02040203","02040204","02040205","02040206","02040207")
+
 # Return the complete list of targets
 c(p1_targets_list, p2_targets_list)
 
