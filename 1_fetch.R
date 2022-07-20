@@ -47,7 +47,7 @@ p1_targets_list <- list(
   
   tar_target(
     p1_nhd_catchments_along_nhm,
-    nhdplusTools::get_nhdplus(comid = p1_nhd_reaches_along_NHM$comid[1], realization = 'catchment')
+    nhdplusTools::get_nhdplus(comid = p1_nhd_reaches_along_NHM$comid, realization = 'catchment')
   ),
   
   # Manually download temperature site locations from ScienceBase using the

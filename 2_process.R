@@ -1,4 +1,5 @@
 source("2_process/src/subset_closest_nhd.R")
+source('2_process/src/raster_in_polygon_weighted_mean.R')
 
 p2_targets_list <- list(
 
