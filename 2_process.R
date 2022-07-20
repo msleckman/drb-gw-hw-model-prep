@@ -15,11 +15,11 @@ p2_targets_list <- list(
                        sites = p1_drb_temp_sites_sf)
   ),
   
-  tar_targets(p2_buffered_nhd_catchments,
-              st_buffer(p1_nhd_reaches, dist = 250)
-  ),
-  
-  tar_targets(p2_buffered_nhd_catchments_along_nhm,
+  # tar_targets(p2_buffered_nhd_catchments,
+  #             st_buffer(p1_nhd_reaches, dist = 250)
+  # ),
+  # 
+  tar_target(p2_buffered_nhd_catchments_along_nhm,
               st_buffer(p1_nhd_reaches_along_NHM, dist = 250)
   ),
   

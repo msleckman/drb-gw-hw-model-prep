@@ -40,10 +40,10 @@ p1_targets_list <- list(
     download_nhdplus_flowlines(p1_drb_comids_all_tribs$COMID)
   ),
   
-  tar_target(
-    p1_nhd_catchments,
-    nhdplusTools::get_nhdplus(comid = p1_nhd_reaches$comid, realization = 'catchment')
-  ),
+  # tar_target(
+  #   p1_nhd_catchments,
+  #   nhdplusTools::get_nhdplus(comid = p1_nhd_reaches$comid, realization = 'catchment')
+  # ),
   
   tar_target(
     p1_nhd_catchments_along_nhm,
