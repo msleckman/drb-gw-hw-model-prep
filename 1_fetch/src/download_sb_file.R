@@ -5,6 +5,7 @@ download_sb_file <- function(sb_id, out_dir, file_name = NULL, overwrite_file = 
   #' @param sb_id string - the id of the science base item
   #' @param file_name string - the name of the file in the science base item to download
   #' @param out_dir string - the directory where you want the file downloaded to
+  #' @param overwrite_file whether to overwrite download if file already present in out_dir. Default TRUE. see sbtools::item_file_download() for further details 
   #'
   #' @value string the out_path
   
