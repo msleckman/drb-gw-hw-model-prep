@@ -12,6 +12,25 @@ p2_targets_list <- list(
     p2_drb_temp_sites_w_segs,
     subset_closest_nhd(nhd_lines = p1_nhd_reaches_along_NHM,
                        sites = p1_drb_temp_sites_sf)
-  )
+  ),
   
+  tar_targets(p2_buffered_nhd_catchments,
+              st_buffer(p1_nhd_reaches, dist = 250)
+  ),
+  
+  tar_targets(p2_buffered_nhd_catchments_along_nhm,
+              st_buffer(p1_nhd_reaches_along_NHM, dist = 250)
+  ),
+  
+  tar_target(depth_to_bedrock_reach,
+             raster_in_polygon_weighted_mean(raster = '1_fetch/in/Shangguan_dtb_cm_250m_clip 2/w001001.adf',
+                                             nhd_polygon_layer =  p2_buffered_nhd_catchments_along_nhm,
+                                             comid_col = 'comid')
+  ),
+  
+  tar_target(p2_depth_to_bedrock_catchments,
+             raster_in_polygon_weighted_mean(raster = '1_fetch/in/Shangguan_dtb_cm_250m_clip 2/w001001.adf',
+                                             nhd_polygon_layer =  p1_nhd_catchments_along_nhm,
+                                             comid_col = 'comid')
+  )
 )

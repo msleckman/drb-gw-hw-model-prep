@@ -39,7 +39,17 @@ p1_targets_list <- list(
     p1_nhd_reaches,
     download_nhdplus_flowlines(p1_drb_comids_all_tribs$COMID)
   ),
-
+  
+  tar_target(
+    p1_nhd_catchments,
+    nhdplusTools::get_nhdplus(comid = p1_nhd_reaches$comid, realization = 'catchment')
+  ),
+  
+  tar_target(
+    p1_nhd_catchments_along_nhm,
+    nhdplusTools::get_nhdplus(comid = p1_nhd_reaches_along_NHM$comid[1], realization = 'catchment')
+  ),
+  
   # Manually download temperature site locations from ScienceBase using the
   # commented-out code below and place the downloaded zip file in 1_fetch/in. 
   # Note that you'll be prompted for your username and password and will need 
