@@ -59,6 +59,7 @@ p1_targets_list <- list(
   # download_sb_file(sb_id = "623e54c4d34e915b67d83580",
   #                 file_name = "study_monitoring_sites.zip",
   #                 out_dir = "1_fetch/in")
+
   tar_target(
     p1_drb_temp_sites_shp,
     {
