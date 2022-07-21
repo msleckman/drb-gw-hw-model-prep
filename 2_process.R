@@ -1,6 +1,6 @@
 source("2_process/src/subset_closest_nhd.R")
 source("2_process/src/estimate_mean_width.R")
-source("2_process/src/write_feather.R")
+source("2_process/src/write_data.R")
 
 p2_targets_list <- list(
 
@@ -70,8 +70,10 @@ p2_targets_list <- list(
   
   # Save river-dl input drivers at NHDv2 resolution as a feather file
   tar_target(
-    p2_input_drivers_nhd_feather,
-    write_feather(p2_input_drivers_nhd, "2_process/out/riverdl_inputs_nhdv2.feather"),
+    p2_input_drivers_nhd_zarr,
+    write_df_to_zarr(p2_input_drivers_nhd, 
+                     index_cols = c("COMID"), 
+                     "2_process/out/nhdv2_inputs_io.zarr"),
     format = "file"
   )
   
