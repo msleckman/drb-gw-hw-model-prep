@@ -1,6 +1,7 @@
 source("1_fetch/src/download_nhdplus_flowlines.R")
 source('1_fetch/src/sb_read_filter_by_comids.R')
 source("1_fetch/src/download_sb_file.R")
+source("1_fetch/src/download_nhdplus_catchments.R")
 
 p1_targets_list <- list(
   
@@ -40,14 +41,15 @@ p1_targets_list <- list(
     download_nhdplus_flowlines(p1_drb_comids_all_tribs$COMID)
   ),
   
-  # tar_target(
-  #   p1_nhd_catchments,
-  #   nhdplusTools::get_nhdplus(comid = p1_nhd_reaches$comid, realization = 'catchment')
-  # ),
+  ## Commenting out as it will take a while to run
+  tar_target(
+    p1_nhd_catchments,
+    get_nhdplusv2_catchments(comid = p1_nhd_reaches$comid)
+  ),
   
   tar_target(
     p1_nhd_catchments_along_nhm,
-    nhdplusTools::get_nhdplus(comid = p1_nhd_reaches_along_NHM$comid, realization = 'catchment')
+    get_nhdplusv2_catchments(comid = p1_nhd_reaches_along_NHM$comid)
   ),
   
   # Manually download temperature site locations from ScienceBase using the
