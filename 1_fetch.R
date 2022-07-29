@@ -78,7 +78,6 @@ p1_targets_list <- list(
   # download_sb_file(sb_id = "623e54c4d34e915b67d83580",
   #                 file_name = "study_monitoring_sites.zip",
   #                 out_dir = "1_fetch/in")
-
   tar_target(
     p1_drb_temp_sites_shp,
     {
@@ -145,6 +144,17 @@ p1_targets_list <- list(
   tar_target(
     p1_sntemp_input_output,
     read_netcdf(p1_sntemp_input_output_nc)
+  ),
+  
+  # Read in meteorological data aggregated to NHDPlusV2 catchments for the 
+  # DRB (prepped in https://github.com/USGS-R/drb_gridmet_tools). Note that
+  # the DRB met data file must be stored in 1_fetch/in. If working outside
+  # of tallgrass/caldera, this file will need to be downloaded from the
+  # PGDL-DO project's S3 bucket and manually placed in 1_fetch/in.
+  tar_target(
+    p1_drb_nhd_gridmet,
+    "1_fetch/in/drb_climate_2022_06_14.nc",
+    format = "file"
   ),
   
   # Download ref-gages v0.6 to help QC matching NWIS sites to NHDv2 flowlines
