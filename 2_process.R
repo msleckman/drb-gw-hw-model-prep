@@ -78,6 +78,21 @@ p2_targets_list <- list(
       select(segidnat, seg_elev, seg_slope, seg_width)
   ),
   
+  # Subset the DRB meteorological data to only include the NHDPlusv2 catchments 
+  # (COMID) that intersect the NHM segments. `subset_nc_to_comid()` originally
+  # developed by Jeff Sadler as part of the PGDL-DO project:
+  # https://github.com/USGS-R/drb-do-ml/blob/main/2_process/src/subset_nc_to_comid.py
+  tar_target(
+    p2_met_data_nhd_mainstem_reaches,
+    {
+      reticulate::source_python("2_process/src/subset_nc_to_comid.py")
+      subset_nc_to_comids(p1_drb_nhd_gridmet, 
+                          p2_nhd_mainstem_reaches_w_width$comid) %>%
+        as_tibble() %>%
+        relocate(c(COMID,time), .before = "tmmx")
+    }
+  ),
+  
   # Compile river-dl input drivers at NHDv2 resolution, including river width
   # (meters), slope (unitless), and min/max elevation (transformed to meters
   # from cm). Note that these input drivers represent "mainstem" NHDv2 reaches 
