@@ -5,6 +5,14 @@ source("2_process/src/write_data.R")
 
 p2_targets_list <- list(
 
+  # Subset NHDv2 reaches that overlap the NHM network to only include those 
+  # that have a corresponding catchment (and meteorological data)
+  tar_target(
+    p2_nhd_reaches_along_NHM_w_cats,
+    p1_nhd_reaches_along_NHM %>%
+      filter(areasqkm > 0)
+  ),
+  
   # Match temperature monitoring locations to "mainstem" NHDPlusv2 flowline
   # reaches, i.e. those that NHD reaches that intersect the NHM river network.
   # Note that this site-to-segment matching procedure emulates the process
@@ -13,7 +21,7 @@ p2_targets_list <- list(
   # for which the downstream vertex (endpoint) is close to the site point.
   tar_target(
     p2_drb_temp_sites_w_segs,
-    subset_closest_nhd(nhd_lines = p1_nhd_reaches_along_NHM,
+    subset_closest_nhd(nhd_lines = p2_nhd_reaches_along_NHM_w_cats,
                        sites = p1_drb_temp_sites_sf)
   ),
   
@@ -60,7 +68,7 @@ p2_targets_list <- list(
   # Estimate mean width for each "mainstem" NHDv2 reach 
   tar_target(
     p2_nhd_mainstem_reaches_w_width,
-    estimate_mean_width(p1_nhd_reaches_along_NHM, 
+    estimate_mean_width(p2_nhd_reaches_along_NHM_w_cats, 
                         estimation_method = 'nwis',
                         network_pos_variable = 'arbolate_sum',
                         ref_gages = p1_ref_gages_sf)
@@ -82,6 +90,7 @@ p2_targets_list <- list(
   # (COMID) that intersect the NHM segments. `subset_nc_to_comid()` originally
   # developed by Jeff Sadler as part of the PGDL-DO project:
   # https://github.com/USGS-R/drb-do-ml/blob/main/2_process/src/subset_nc_to_comid.py
+  # The resulting target is ~1.6 GB.
   tar_target(
     p2_met_data_nhd_mainstem_reaches,
     {

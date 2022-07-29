@@ -29,7 +29,10 @@ def subset_nc_to_comids(nc_file, comids):
     comids_not_in_climate = comids[~np.isin(comids, ds.COMID.values)]
     print(comids_not_in_climate)
 
-    # make sure it's just the one that we are expecting
+    # We know of one COMID that has no catchment and so should be included
+    # in `comids_not_in_climate` if passed through in `comids`. Use assert 
+    # statement to make sure we are aware of any others. COMIDs within 
+    # `comids_not_in_climate` will not have matched climate data. 
     if len(comids_not_in_climate) > 0 :
         assert list(comids_not_in_climate) == [4781767]
     ds_comids = ds.sel(COMID=comids_in_climate)
