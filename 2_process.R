@@ -106,12 +106,14 @@ p2_targets_list <- list(
   # Compile river-dl input drivers at NHDv2 resolution, including river width
   # (meters), slope (unitless), and min/max elevation (meters). Note that these
   # input drivers represent "mainstem" NHDv2 reaches only (i.e., those reaches
-  # that intersect the NHM fabric).
+  # that intersect the NHM fabric). The resulting target contains 15,869 days of
+  # climate data across each of 3,182 COMIDs = 50,495,158 total rows.
   tar_target(
     p2_input_drivers_nhd,
-    combine_nhd_input_drivers(p2_nhd_mainstem_reaches_w_width,
-                              p2_input_drivers_prms,
-                              p1_drb_comids_all_tribs)
+    combine_nhd_input_drivers(nhd_flowlines = p2_nhd_mainstem_reaches_w_width,
+                              prms_inputs = p2_input_drivers_prms,
+                              nhd_nhm_xwalk = p1_drb_comids_all_tribs,
+                              climate_inputs = p2_met_data_nhd_mainstem_reaches)
   ),
   
   # Save river-dl input drivers at NHDv2 resolution as a feather file
