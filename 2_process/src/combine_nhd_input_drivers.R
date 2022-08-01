@@ -68,7 +68,8 @@ combine_nhd_input_drivers <- function(nhd_flowlines, prms_inputs, nhd_nhm_xwalk,
     left_join(y = mutate(climate_inputs, COMID = as.character(COMID)), 
                          by = "COMID") %>%
     relocate(segidnat, .after = COMID) %>%
-    relocate(subsegid, .after = segidnat)
+    relocate(subsegid, .after = segidnat) %>%
+    relocate(time, .after = subsegid)
   
   return(nhd_all_inputs)
 
