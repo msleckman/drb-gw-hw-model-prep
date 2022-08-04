@@ -41,6 +41,17 @@ p1_targets_list <- list(
     p1_nhd_reaches,
     download_nhdplus_flowlines(p1_drb_comids_all_tribs$COMID)
   ),
+  
+  tar_target(
+    p1_PRMS_catchments,
+    {sf_use_s2(FALSE)
+      left_join(p1_nhd_catchments %>% mutate(COMID = as.character(COMID)),
+                p1_drb_comids_all_tribs %>% mutate(COMID = as.character(COMID)),
+                by = 'COMID') %>%
+        group_by(PRMS_segid) %>%
+        dplyr::summarize()
+    }
+  ),
 
   # Manually download temperature site locations from ScienceBase using the
   # commented-out code below and place the downloaded zip file in 1_fetch/in. 
