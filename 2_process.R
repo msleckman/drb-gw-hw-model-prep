@@ -25,12 +25,12 @@ p2_targets_list <- list(
               st_buffer(p1_nhd_reaches_along_NHM, dist = 250)
   ),
 
-  ## Catchment 
-  # tar_target(p2_depth_to_bedrock_catchments,
-  #            raster_in_polygon_weighted_mean(raster = '1_fetch/in/Shangguan_dtb_cm_250m_clip 2/w001001.adf',
-  #                                            nhd_polygon_layer =  p1_nhd_catchments,
-  #                                            comid_col = 'COMID')
-  # ),
+  # Catchment -- Will be updated to upstream catchments
+  tar_target(p2_depth_to_bedrock_catchments,
+             raster_in_polygon_weighted_mean(raster = '1_fetch/in/Shangguan_dtb_cm_250m_clip 2/w001001.adf',
+                                             nhd_polygon_layer =  p1_nhd_catchments,
+                                             comid_col = 'COMID')
+  ),
    
   tar_target(p2_depth_to_bedrock_catchments_along_nhm,
              raster_in_polygon_weighted_mean(raster = '1_fetch/in/Shangguan_dtb_cm_250m_clip 2/w001001.adf',
