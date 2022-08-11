@@ -91,7 +91,7 @@ p2_targets_list <- list(
   # (COMID) that intersect the NHM segments. `subset_nc_to_comid()` originally
   # developed by Jeff Sadler as part of the PGDL-DO project:
   # https://github.com/USGS-R/drb-do-ml/blob/main/2_process/src/subset_nc_to_comid.py
-  # The resulting target is ~1.6 GB.
+  # The resulting target is ~0.6 GB.
   tar_target(
     p2_met_data_nhd_mainstem_reaches,
     {
@@ -99,7 +99,13 @@ p2_targets_list <- list(
       subset_nc_to_comids(p1_drb_nhd_gridmet, 
                           p2_nhd_mainstem_reaches_w_width$comid) %>%
         as_tibble() %>%
-        relocate(c(COMID,time), .before = "tmmx")
+        relocate(c(COMID,time), .before = "tmmx") %>%
+        # rename gridmet columns to conform to PRMS-SNTemp names
+        # currently used in river-dl
+        select(COMID, time, tmmn, srad, pr) %>%
+        rename(seg_tave_air = tmmn,
+               seginc_swrad = srad,
+               seg_rain = pr)
     }
   ),
   
