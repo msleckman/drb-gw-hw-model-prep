@@ -7,22 +7,17 @@ source("1_fetch/src/read_netcdf.R")
 
 p1_targets_list <- list(
   
-  # Read in the NHM - NHDv2 crosswalk file
+  # Important! This pipeline uses two versions of the NHM-NHDv2 crosswalk table
+  # for different purposes. All targets pertaining to the "dendritic" version
+  # of the crosswalk table will include the string "dendritic" in the name.
+  # Read in the NHM - NHDv2 crosswalk file that contains all NHDPlusv2 COMIDs
+  # in the DRB (including divergent reaches and reaches without catchments)
   tar_target(
     p1_GFv1_NHDv2_xwalk,
     read_csv(GFv1_NHDv2_xwalk_url,col_types = cols(.default = "c"))
   ),
   
-  # Reshape crosswalk table to return all COMIDs that overlap each NHM segment
-  tar_target(
-    p1_drb_comids_segs, 
-    p1_GFv1_NHDv2_xwalk %>%
-      select(PRMS_segid, segidnat, comid_seg) %>% 
-      tidyr::separate_rows(comid_seg,sep=";") %>% 
-      rename(COMID = comid_seg)
-  ),
-  
-  # Reshape crosswalk table to return all COMIDs that drain to each NHM segment
+  # Reshape crosswalk table to return all COMIDs that drain to each NHM segment.
   tar_target(
     p1_drb_comids_all_tribs, 
     p1_GFv1_NHDv2_xwalk %>%
@@ -31,13 +26,10 @@ p1_targets_list <- list(
       rename(COMID = comid_cat)
   ),
   
-  # Use crosswalk table to fetch just the NHDv2 reaches that overlap the NHM network
-  tar_target(
-    p1_nhd_reaches_along_NHM,
-    download_nhdplus_flowlines(p1_drb_comids_segs$COMID)
-  ),
-  
-  # Use crosswalk table to fetch all NHDv2 reaches in the DRB 
+  # Use crosswalk table to fetch all NHDv2 reaches in the DRB. These COMIDs 
+  # should be used for preparing feature data, including aggregating feature 
+  # values from the NHD-scale to the NHM-scale and/or for deriving feature 
+  # values from raster data.
   tar_target(
     p1_nhd_reaches,
     download_nhdplus_flowlines(p1_drb_comids_all_tribs$COMID)
@@ -68,6 +60,32 @@ p1_targets_list <- list(
     format = "file"
   ),
   
+  # Read in the NHM - NHDv2 crosswalk file that corresponds to the *dendritic* 
+  # network only (i.e., divergent reaches have been omitted). This version of
+  # the crosswalk table was used to build the network distance matrix in 
+  # drb-network-prep, and so includes the COMIDs that we will make predictions
+  # on in the NHD-downscaling set of experiments. 
+  tar_target(
+    p1_GFv1_NHDv2_xwalk_dendritic,
+    read_csv(GFv1_NHDv2_xwalk_dendritic_url,col_types = cols(.default = "c"))
+  ),
+  
+  # Reshape dendritic crosswalk table to return all COMIDs that overlap each 
+  # NHM segment
+  tar_target(
+    p1_drb_comids_dendritic_segs, 
+    p1_GFv1_NHDv2_xwalk_dendritic %>%
+      select(PRMS_segid, segidnat, comid_seg) %>% 
+      tidyr::separate_rows(comid_seg,sep=";") %>% 
+      rename(COMID = comid_seg)
+  ),
+  
+  # Use crosswalk table to fetch just the dendritic NHDv2 reaches that overlap
+  # the NHM network
+  tar_target(
+    p1_dendritic_nhd_reaches_along_NHM,
+    download_nhdplus_flowlines(p1_drb_comids_dendritic_segs$COMID)
+  ),
   
   # Manually download temperature site locations from ScienceBase using the
   # commented-out code below and place the downloaded zip file in 1_fetch/in. 
