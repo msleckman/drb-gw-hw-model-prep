@@ -100,8 +100,7 @@ p2_targets_list <- list(
                           p2_nhd_mainstem_reaches_w_width$comid) %>%
         as_tibble() %>%
         relocate(c(COMID,time), .before = "tmmx") %>%
-        # rename gridmet columns to conform to PRMS-SNTemp names
-        # currently used in river-dl
+        # rename gridmet columns to conform to PRMS-SNTemp names used in river-dl
         select(COMID, time, tmmn, srad, pr) %>%
         rename(seg_tave_air = tmmn,
                seginc_swrad = srad,
@@ -109,17 +108,34 @@ p2_targets_list <- list(
     }
   ),
   
-  # Compile river-dl input drivers at NHDv2 resolution, including river width
-  # (meters), slope (unitless), and min/max elevation (meters). Note that these
-  # input drivers represent "mainstem" NHDv2 reaches only (i.e., those reaches
-  # that intersect the NHM fabric). The resulting target contains 15,869 days of
-  # climate data across each of 3,182 COMIDs = 50,495,158 total rows.
+  # Compile river-dl static input drivers at NHDv2 resolution, including river 
+  # width (m) slope (unitless), and min/max elevation (m). Note that these input 
+  # drivers represent "mainstem" NHDv2 reaches only (i.e., those reaches that 
+  # intersect the NHM fabric). Some of the columns in p2_static_input_drivers_nhd 
+  # are meant to facilitate comparison/EDA between segment attributes at the NHM and 
+  # NHDPlusv2 scales (i.e., seg_slope ~ slope_len_wtd_mean; seg_elev ~ seg_elev_min; 
+  # seg_width ~ seg_width_max). 
+  tar_target(
+    p2_static_input_drivers_nhd,
+    prepare_nhd_static_inputs(nhd_flowlines = p2_nhd_mainstem_reaches_w_width,
+                              prms_inputs = p2_input_drivers_prms,
+                              nhd_nhm_xwalk = p1_drb_comids_all_tribs)
+  ),
+  
+  # Combine NHD-scale static input drivers with dynamic climate drivers. The 
+  # resulting target contains 15,869 days of climate data across each of 
+  # 3,182 COMIDs = 50,495,158 total rows.
   tar_target(
     p2_input_drivers_nhd,
-    combine_nhd_input_drivers(nhd_flowlines = p2_nhd_mainstem_reaches_w_width,
-                              prms_inputs = p2_input_drivers_prms,
-                              nhd_nhm_xwalk = p1_drb_comids_all_tribs,
-                              climate_inputs = p2_met_data_nhd_mainstem_reaches)
+    {
+      static_inputs <- p2_static_input_drivers_nhd %>%
+        select(COMID, segidnat, subsegid, 
+               est_width_m, min_elev_m, slope) %>%
+        rename(seg_width_mean = est_width_m,
+               seg_elev = min_elev_m,
+               seg_slope = slope)
+      combine_nhd_input_drivers(static_inputs, p2_met_data_nhd_mainstem_reaches)
+    }
   ),
   
   # Save river-dl input drivers at NHDv2 resolution as a feather file

@@ -1,8 +1,8 @@
-#' @title Combine NHD input drivers
+#' @title Prepare NHD-scale static input drivers
 #' 
 #' @description 
-#' Function to combine river-dl input drivers for NHDPlusv2 reaches, including
-#' mean width, reach slope, reach elevation, and meteorological data.
+#' Function to combine river-dl static input drivers for NHDPlusv2 reaches, 
+#' including mean width, reach slope, and reach elevation.
 #' 
 #' @param nhd_flowlines sf object containing NHDPlusv2 flowline reaches. Must
 #' contain columns "comid", "minelevsmo", "maxelevsmo", "slope"
@@ -11,8 +11,6 @@
 #' @param nhd_nhm_xwalk data frame that specifies how NHDPlusv2 COMIDs map
 #' onto NHM segment identifiers. Must contain columns "COMID", "PRMS_segid",
 #' and "segidnat".
-#' @param climate_inputs data frame containing daily meteorological data to join
-#' with the NHDPlusv2 static attributes. Must contain column "COMID".
 #'
 #' @returns 
 #' Returns a data frame with one row per COMID in `nhd_flowlines`. Columns
@@ -26,8 +24,7 @@
 #' ("seg_width_max"), and the minimum NHD slope among the COMIDs that make up
 #' each NHM segment ("seg_elev_min").
 #' 
-combine_nhd_input_drivers <- function(nhd_flowlines, prms_inputs, nhd_nhm_xwalk,
-                                      climate_inputs){
+prepare_nhd_static_inputs <- function(nhd_flowlines, prms_inputs, nhd_nhm_xwalk){
   
   # Subset NHDPlusv2 flowlines to return the desired attributes, 
   # including elevation and slope
@@ -60,18 +57,43 @@ combine_nhd_input_drivers <- function(nhd_flowlines, prms_inputs, nhd_nhm_xwalk,
     select(COMID, segidnat, subsegid, est_width_m, slope, slope_len_wtd_mean, 
            lengthkm, min_elev_m, max_elev_m, seg_elev, seg_slope, seg_width, seg_width_max,
            seg_elev_min)
-  
+
+  return(nhd_static_inputs)
+
+}
+
+
+#' @title Combine NHD-scale static and dynamic input drivers
+#' 
+#' @description 
+#' Function to combine river-dl input drivers for NHDPlusv2 reaches, including
+#' mean width, reach slope, reach elevation, and meteorological driver data.
+#' 
+#' @param nhd_static_inputs data frame containing NHDPlusv2 static input data.
+#' Must contain column "COMID".
+#' @param climate_inputs data frame containing daily meteorological data to join
+#' with the NHDPlusv2 static attributes. Must contain column "COMID".
+#'
+#' @returns 
+#' Returns a data frame with one row per COMID in `nhd_static_inputs` and unique
+#' time step in `climate_inputs`. Columns indicate the NHD and NHM segment 
+#' identifiers and the static and dynamic input drivers associated with that 
+#' segment and time step.
+#' 
+combine_nhd_input_drivers <- function(nhd_static_inputs, climate_inputs){
+
   message("Combining NHD static inputs with dynamic climate drivers...")
   
   # Combine dynamic meteorological inputs with static input data
   nhd_all_inputs <- nhd_static_inputs %>%
     left_join(y = mutate(climate_inputs, COMID = as.character(COMID)), 
-                         by = "COMID") %>%
+              by = "COMID") %>%
     relocate(segidnat, .after = COMID) %>%
     relocate(subsegid, .after = segidnat) %>%
     relocate(time, .after = subsegid)
   
   return(nhd_all_inputs)
-
+  
 }
+
 
