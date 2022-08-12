@@ -77,7 +77,7 @@ p2_targets_list <- list(
   
   # Pull static segment attributes from PRMS SNTemp model driver data
   tar_target(
-    p2_input_drivers_prms,
+    p2_static_input_drivers_prms,
     p1_sntemp_input_output %>%
       group_by(seg_id_nat) %>%
       summarize(seg_elev = unique(seg_elev),
@@ -85,6 +85,14 @@ p2_targets_list <- list(
                 seg_width = mean(seg_width, na.rm = TRUE)) %>%
       mutate(segidnat = as.character(seg_id_nat)) %>%
       select(segidnat, seg_elev, seg_slope, seg_width)
+  ),
+  
+  # Pull dynamic segment attributes from PRMS SNTemp model driver data
+  tar_target(
+    p2_dynamic_input_drivers_prms,
+    p1_sntemp_input_output %>%
+      mutate(segidnat = as.character(seg_id_nat)) %>%
+      select(segidnat, date, seginc_potet)
   ),
   
   # Subset the DRB meteorological data to only include the NHDPlusv2 catchments 
@@ -118,13 +126,16 @@ p2_targets_list <- list(
   tar_target(
     p2_static_input_drivers_nhd,
     prepare_nhd_static_inputs(nhd_flowlines = p2_nhd_mainstem_reaches_w_width,
-                              prms_inputs = p2_input_drivers_prms,
+                              prms_inputs = p2_static_input_drivers_prms,
                               nhd_nhm_xwalk = p1_drb_comids_all_tribs)
   ),
   
-  # Combine NHD-scale static input drivers with dynamic climate drivers. The 
-  # resulting target contains 15,869 days of climate data across each of 
-  # 3,182 COMIDs = 50,495,158 total rows.
+  # Combine NHD-scale static input drivers with dynamic climate drivers. 
+  # Note that there is currently no pot ET analog variable at the NHD-scale,
+  # so we are using seginc_potet from PRMS-SNTemp and assuming that there is 
+  # not much intra-segment variation in potential ET among NHD reaches that 
+  # contribute to a given NHM segment. The resulting target contains 15,800 
+  # days of climate data across each of 3,182 COMIDs = 50,275,600 total rows.
   tar_target(
     p2_input_drivers_nhd,
     {
@@ -134,7 +145,11 @@ p2_targets_list <- list(
         rename(seg_width_mean = est_width_m,
                seg_elev = min_elev_m,
                seg_slope = slope)
-      combine_nhd_input_drivers(static_inputs, p2_met_data_nhd_mainstem_reaches)
+      combine_nhd_input_drivers(nhd_static_inputs = static_inputs, 
+                                climate_inputs = p2_met_data_nhd_mainstem_reaches,
+                                prms_dynamic_inputs = p2_dynamic_input_drivers_prms,
+                                earliest_date = "1979-01-01",
+                                latest_date = "2022-04-04")
     }
   ),
   

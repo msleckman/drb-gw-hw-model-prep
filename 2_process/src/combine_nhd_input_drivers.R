@@ -73,6 +73,12 @@ prepare_nhd_static_inputs <- function(nhd_flowlines, prms_inputs, nhd_nhm_xwalk)
 #' Must contain column "COMID".
 #' @param climate_inputs data frame containing daily meteorological data to join
 #' with the NHDPlusv2 static attributes. Must contain column "COMID".
+#' @param prms_dynamic_inputs data frame containing daily dynamic inputs from the
+#' PRMS-SNTemp model. Must include columns "date".
+#' @param earliest_date character string with format "YYYY-MM-DD" that indicates
+#' the earliest desired date for returned NHD-scale input drivers.
+#' @param latest_date character string with format "YYYY-MM-DD" that indicates
+#' the most recent desired date for returned NHD-scale input drivers. 
 #'
 #' @returns 
 #' Returns a data frame with one row per COMID in `nhd_static_inputs` and unique
@@ -80,17 +86,22 @@ prepare_nhd_static_inputs <- function(nhd_flowlines, prms_inputs, nhd_nhm_xwalk)
 #' identifiers and the static and dynamic input drivers associated with that 
 #' segment and time step.
 #' 
-combine_nhd_input_drivers <- function(nhd_static_inputs, climate_inputs){
+combine_nhd_input_drivers <- function(nhd_static_inputs, climate_inputs, prms_dynamic_inputs,
+                                      earliest_date, latest_date){
 
-  message("Combining NHD static inputs with dynamic climate drivers...")
+  message("Combining NHD static inputs with dynamic climate and PRMS-SNTemp drivers...")
   
   # Combine dynamic meteorological inputs with static input data
   nhd_all_inputs <- nhd_static_inputs %>%
     left_join(y = mutate(climate_inputs, COMID = as.character(COMID)), 
               by = "COMID") %>%
+    mutate(date = lubridate::as_date(time)) %>%
+    left_join(y = prms_dynamic_inputs, by = c("segidnat","date")) %>%
+    filter(date >= earliest_date, date <= latest_date) %>%
     relocate(segidnat, .after = COMID) %>%
     relocate(subsegid, .after = segidnat) %>%
-    relocate(time, .after = subsegid)
+    relocate(time, .after = subsegid) %>%
+    select(-date)
   
   return(nhd_all_inputs)
   
