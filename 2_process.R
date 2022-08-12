@@ -138,11 +138,11 @@ p2_targets_list <- list(
     }
   ),
   
-  # Save river-dl input drivers at NHDv2 resolution as a feather file
+  # Save river-dl input drivers at NHDv2 resolution as a zarr data store
   tar_target(
     p2_input_drivers_nhd_zarr,
     write_df_to_zarr(p2_input_drivers_nhd, 
-                     index_cols = c("COMID"), 
+                     index_cols = c("COMID", "time"), 
                      "2_process/out/nhdv2_inputs_io.zarr"),
     format = "file"
   )
