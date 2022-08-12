@@ -142,7 +142,7 @@ p2_targets_list <- list(
   tar_target(
     p2_input_drivers_nhd_zarr,
     write_df_to_zarr(p2_input_drivers_nhd, 
-                     index_cols = c("COMID", "time"), 
+                     index_cols = c("time", "COMID"), 
                      "2_process/out/nhdv2_inputs_io.zarr"),
     format = "file"
   )
