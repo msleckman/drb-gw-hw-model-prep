@@ -9,8 +9,8 @@ p2_targets_list <- list(
   # Subset NHDv2 reaches that overlap the NHM network to only include those 
   # that have a corresponding catchment (and meteorological data)
   tar_target(
-    p2_nhd_reaches_along_NHM_w_cats,
-    p1_nhd_reaches_along_NHM %>%
+    p2_dendritic_nhd_reaches_along_NHM_w_cats,
+    p1_dendritic_nhd_reaches_along_NHM %>%
       filter(areasqkm > 0)
   ),
   
@@ -22,7 +22,7 @@ p2_targets_list <- list(
   # for which the downstream vertex (endpoint) is close to the site point.
   tar_target(
     p2_drb_temp_sites_w_segs,
-    subset_closest_nhd(nhd_lines = p2_nhd_reaches_along_NHM_w_cats,
+    subset_closest_nhd(nhd_lines = p2_dendritic_nhd_reaches_along_NHM_w_cats,
                        sites = p1_drb_temp_sites_sf)
   ),
   
@@ -69,7 +69,7 @@ p2_targets_list <- list(
   # Estimate mean width for each "mainstem" NHDv2 reach 
   tar_target(
     p2_nhd_mainstem_reaches_w_width,
-    estimate_mean_width(p2_nhd_reaches_along_NHM_w_cats, 
+    estimate_mean_width(p2_dendritic_nhd_reaches_along_NHM_w_cats, 
                         estimation_method = 'nwis',
                         network_pos_variable = 'arbolate_sum',
                         ref_gages = p1_ref_gages_sf)
@@ -135,7 +135,7 @@ p2_targets_list <- list(
   # so we are using seginc_potet from PRMS-SNTemp and assuming that there is 
   # not much intra-segment variation in potential ET among NHD reaches that 
   # contribute to a given NHM segment. The resulting target contains 15,800 
-  # days of climate data across each of 3,182 COMIDs = 50,275,600 total rows.
+  # days of climate data across each of 3,173 COMIDs = 50,133,400 total rows.
   tar_target(
     p2_input_drivers_nhd,
     {
