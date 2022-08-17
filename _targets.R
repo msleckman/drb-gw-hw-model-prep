@@ -1,7 +1,7 @@
 library(targets)
 
 options(tidyverse.quiet = TRUE)
-tar_option_set(packages = c("tidyverse","sbtools","sf","nhdplusTools", 'purrr', 'terra','raster', "arrow", "tidync", "ncdf4", "reticulate")) 
+tar_option_set(packages = c("raster","sbtools","sf","nhdplusTools", 'purrr', 'terra', 'tidyverse', "arrow", "tidync", "ncdf4", "reticulate")) 
 
 # dir for selected datasets soil characteristics from nhd statsgo
 dir.create('1_fetch/out/statsgo', showWarnings = FALSE)
@@ -21,7 +21,6 @@ GFv1_NHDv2_xwalk_url <- paste0("https://raw.githubusercontent.com/USGS-R/drb-net
 ## nhd parent id 
 # pulled from https://www.sciencebase.gov/catalog/item/5728d6ace4b0b13d3918a992
 nhd_statsgo_parent_sbid <- '5728d6ace4b0b13d3918a992'
-
 
 # Return the complete list of targets
 c(p1_targets_list, p2_targets_list)
