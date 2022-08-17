@@ -61,7 +61,7 @@ p1_targets_list <- list(
                 p1_drb_comids_all_tribs %>% mutate(COMID = as.character(COMID)),
                 by = 'COMID') %>%
         group_by(segidnat) %>%
-        dplyr::summarize()
+        dplyr::summarize(geometry = sf::st_union(geometry))
     }
   ),
   
