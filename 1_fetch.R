@@ -49,13 +49,9 @@ p1_targets_list <- list(
     get_nhdplusv2_catchments(comid = p1_nhd_reaches$comid)
   ),
   
+  ## polygons are analogous to HRU 
   tar_target(
-    p1_nhd_catchments_along_nhm,
-    get_nhdplusv2_catchments(comid = p1_nhd_reaches_along_NHM$comid)
-  ),
-  
-  tar_target(
-    p1_nhm_catchments_upstream,
+    p1_nhm_catchments_dissolved,
     {sf_use_s2(FALSE)
       left_join(p1_nhd_catchments %>% mutate(COMID = as.character(COMID)),
                 p1_drb_comids_all_tribs %>% mutate(COMID = as.character(COMID)),

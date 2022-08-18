@@ -18,7 +18,7 @@ p2_targets_list <- list(
   ),
 
   tar_target(p2_buffered_nhd_reaches_along_nhm,
-              st_buffer(p1_nhd_reaches_along_NHM, dist = 250)
+              st_buffer(p1_nhd_reaches_along_NHM, dist = units::set_units(250, m))
   ),
   
   # Reach -- depth_to_bedrock data for each nhm reach buffered 250m  
@@ -31,16 +31,10 @@ p2_targets_list <- list(
   # Catchment -- depth_to_bedrock data for each nhm upstream catchment 
   tar_target(p2_depth_to_bedrock_catchments_along_nhm_upstream,
              raster_in_polygon_weighted_mean(raster = '1_fetch/in/Shangguan_dtb_cm_250m_clip 2/w001001.adf',
-                                             nhd_polygon_layer =  p1_nhm_catchments_upstream,
+                                             nhd_polygon_layer =  p1_nhm_catchments_dissolved,
                                              comid_col = 'segidnat')
   ),
   
-  # Catchment -- These are the Individuals catchments for the nhm network segments
-  tar_target(p2_depth_to_bedrock_catchments_along_nhm,
-             raster_in_polygon_weighted_mean(raster = '1_fetch/in/Shangguan_dtb_cm_250m_clip 2/w001001.adf',
-                                             nhd_polygon_layer =  p1_nhd_catchments_along_nhm,
-                                             comid_col = 'COMID')
-  ),
   
   # Estimate mean width for each "mainstem" NHDv2 reach 
   tar_target(
