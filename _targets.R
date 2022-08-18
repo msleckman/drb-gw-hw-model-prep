@@ -25,7 +25,7 @@ nhd_statsgo_parent_sbid <- '5728d6ace4b0b13d3918a992'
 ## Depth to bedrock data source
 ## original source: http://globalchange.bnu.edu.cn/research/dtb.jsp#download (required form submission to obtain)
 ## Clipped drb version already stored in Caldera 1_fetch/in. To successfully run this pipeline, this data must be manually copied locally to 1_fetch/in 
-Shangguan_dtb_cm_250m_clip_path <- '1_fetch/in/Shangguan_dtb_cm_250m_clip 2/w001001.adf'
+Shangguan_dtb_cm_250m_clip_path <- '1_fetch/in/Shangguan_dtb_cm_250m_clip2/w001001.adf'
 
 # Return the complete list of targets
 c(p1_targets_list, p2_targets_list)
