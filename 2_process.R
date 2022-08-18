@@ -108,11 +108,13 @@ p2_targets_list <- list(
                           p2_nhd_mainstem_reaches_w_width$comid) %>%
         as_tibble() %>%
         relocate(c(COMID,time), .before = "tmmx") %>%
+        # convert gridmet precip units from inches to meters, and temperature
+        # units from degrees Farenheit to degrees Celsius
+        mutate(seg_tave_air = ((tmmn - 32) * (5/9)),
+               seg_rain = pr * 0.0254) %>%
         # rename gridmet columns to conform to PRMS-SNTemp names used in river-dl
-        select(COMID, time, tmmn, srad, pr) %>%
-        rename(seg_tave_air = tmmn,
-               seginc_swrad = srad,
-               seg_rain = pr)
+        select(COMID, time, seg_tave_air, srad, seg_rain) %>%
+        rename(seginc_swrad = srad)
     }
   ),
   
