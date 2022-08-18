@@ -22,17 +22,18 @@ p2_targets_list <- list(
   ),
   
   # Reach -- depth_to_bedrock data for each nhm reach buffered 250m  
-  # Note: the Shangguan_dtb_cm_250m_clip 2/w001001.adf dataset must be manually downloaded and stored locally in the 1_fetch/in folder 
-  # original source: http://globalchange.bnu.edu.cn/research/dtb.jsp, but clipped vrsn for DRB in project sharepoint
+  ## Note: If you do not have Shangguan_dtb_cm_250m_clip_path data, you must grab it from caldera project folder. 
+  ## Dataset accessible on caldera in project folder sub-dir: 1_fetch/in. scp to to local in the 1_fetch/in folder in order to run this piece of pipeline
+  ## original source: http://globalchange.bnu.edu.cn/research/dtb.jsp. Data was clipped to drb before getting added to caldera.
   tar_target(p2_depth_to_bedrock_reaches_along_nhm,
-             raster_in_polygon_weighted_mean(raster = '1_fetch/in/Shangguan_dtb_cm_250m_clip 2/w001001.adf',
+             raster_in_polygon_weighted_mean(raster = Shangguan_dtb_cm_250m_clip_path,
                                              nhd_polygon_layer =  p2_buffered_nhd_reaches_along_nhm,
                                              comid_col = 'comid')
   ),
   
   # Catchment -- depth_to_bedrock data for each nhm upstream catchment 
   tar_target(p2_depth_to_bedrock_catchments_along_nhm_upstream,
-             raster_in_polygon_weighted_mean(raster = '1_fetch/in/Shangguan_dtb_cm_250m_clip 2/w001001.adf',
+             raster_in_polygon_weighted_mean(raster = Shangguan_dtb_cm_250m_clip_path,
                                              nhd_polygon_layer =  p1_nhm_catchments_dissolved,
                                              comid_col = 'segidnat')
   ),
