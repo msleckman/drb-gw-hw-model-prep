@@ -32,7 +32,7 @@ p2_targets_list <- list(
   ),
   
   # Catchment -- depth_to_bedrock data for each nhm upstream catchment 
-  tar_target(p2_depth_to_bedrock_catchments_along_nhm_upstream,
+  tar_target(p2_depth_to_bedrock_catchments_along_nhm_dissolved,
              raster_in_polygon_weighted_mean(raster = Shangguan_dtb_cm_250m_clip_path,
                                              nhd_polygon_layer =  p1_nhm_catchments_dissolved,
                                              comid_col = 'segidnat')
