@@ -16,20 +16,23 @@ p2_targets_list <- list(
     subset_closest_nhd(nhd_lines = p1_nhd_reaches_along_NHM,
                        sites = p1_drb_temp_sites_sf)
   ),
-  
-  tar_target(p2_buffered_nhd_reaches,
-              st_buffer(p1_nhd_reaches, dist = 250)
-  ),
 
   tar_target(p2_buffered_nhd_reaches_along_nhm,
               st_buffer(p1_nhd_reaches_along_NHM, dist = 250)
   ),
-
-  # Catchment -- These are the Individuals catchments for the nhd network segments
-  tar_target(p2_depth_to_bedrock_catchments,
+  
+  # Reach -- depth_to_bedrock data for each nhm reach buffered 250m  
+  tar_target(p2_depth_to_bedrock_reaches_along_nhm,
              raster_in_polygon_weighted_mean(raster = '1_fetch/in/Shangguan_dtb_cm_250m_clip 2/w001001.adf',
-                                             nhd_polygon_layer =  p1_nhd_catchments,
-                                             comid_col = 'COMID')
+                                             nhd_polygon_layer =  p2_buffered_nhd_reaches_along_nhm,
+                                             comid_col = 'comid')
+  ),
+  
+  # Catchment -- depth_to_bedrock data for each nhm upstream catchment 
+  tar_target(p2_depth_to_bedrock_catchments_along_nhm_upstream,
+             raster_in_polygon_weighted_mean(raster = '1_fetch/in/Shangguan_dtb_cm_250m_clip 2/w001001.adf',
+                                             nhd_polygon_layer =  p1_nhm_catchments_upstream,
+                                             comid_col = 'segidnat')
   ),
   
   # Catchment -- These are the Individuals catchments for the nhm network segments
@@ -38,19 +41,7 @@ p2_targets_list <- list(
                                              nhd_polygon_layer =  p1_nhd_catchments_along_nhm,
                                              comid_col = 'COMID')
   ),
-
-  tar_target(p2_depth_to_bedrock_reaches,
-             raster_in_polygon_weighted_mean(raster = '1_fetch/in/Shangguan_dtb_cm_250m_clip 2/w001001.adf',
-                                             nhd_polygon_layer =  p2_buffered_nhd_reaches,
-                                             comid_col = 'comid')
-  ),
   
-  tar_target(p2_depth_to_bedrock_reaches_along_nhm,
-             raster_in_polygon_weighted_mean(raster = '1_fetch/in/Shangguan_dtb_cm_250m_clip 2/w001001.adf',
-                                             nhd_polygon_layer =  p2_buffered_nhd_reaches_along_nhm,
-                                             comid_col = 'comid')
-  ),
-
   # Estimate mean width for each "mainstem" NHDv2 reach 
   tar_target(
     p2_nhd_mainstem_reaches_w_width,
