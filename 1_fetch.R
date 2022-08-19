@@ -56,7 +56,7 @@ p1_targets_list <- list(
       left_join(p1_nhd_catchments %>% mutate(COMID = as.character(COMID)),
                 p1_drb_comids_all_tribs %>% mutate(COMID = as.character(COMID)),
                 by = 'COMID') %>%
-        group_by(segidnat) %>%
+        group_by(PRMS_segid) %>%
         dplyr::summarize(geometry = sf::st_union(geometry))
     }
   ),
