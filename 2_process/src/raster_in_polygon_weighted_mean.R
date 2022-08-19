@@ -1,13 +1,12 @@
 raster_in_polygon_weighted_mean <- function(raster,
                                             nhd_polygon_layer,
-                                            weighted_mean_col_name = 'dtb_weighted_mean',
-                                            comid_col = NULL){
+                                            weighted_mean_col_name,
+                                            feature_id = NULL){
 
   #'@description function that takes a raster and vector polygon layer and summarizes the raster values within each polygon. Aggregation is a weighted mean. 
   #'@param raster path to raster file (.tif or .adf), raster or SpatRaster object
   #'@param nhd_polygon_layer polygon vector object. Polylines will not be accepted. Must buffer polylines before adding as input
   #'@param weighted_mean_col_name col name for new summarized col name
-  #'@param comid_col comid col of the polygon. e.g 'comid' or 'featureid'. When NULL, No ID index is returned dataframe
   
   ## SPATRASTER
   if(class(raster) != 'SpatRaster'){
@@ -42,6 +41,6 @@ raster_in_polygon_weighted_mean <- function(raster,
   nhd_polygon_layer[weighted_mean_col_name] <- round(raster_val_per_polygon[,2], 3)
   
   # RETURN
-  return(nhd_polygon_layer[c(comid_col,weighted_mean_col_name)])
+  return(nhd_polygon_layer[c(feature_id,weighted_mean_col_name)])
   
 }
