@@ -16,14 +16,20 @@ p2_targets_list <- list(
     subset_closest_nhd(nhd_lines = p1_nhd_reaches_along_NHM,
                        sites = p1_drb_temp_sites_sf)
   ),
-
+  
   tar_target(p2_buffered_nhd_reaches_along_nhm,
-              st_buffer(p1_nhd_reaches_along_NHM, dist = units::set_units(250, m)) %>% 
+             st_buffer(p1_nhd_reaches_along_NHM, dist = units::set_units(250, m))
+  ),
+
+  tar_target(p2_buffered_nhd_reaches_along_nhm_PRMS,
+             p2_buffered_nhd_reaches_along_nhm %>% 
                mutate(COMID = as.character(comid)) %>% 
-                 left_join(.,,
-                           p1_drb_comids_all_tribs %>% mutate(COMID = as.character(COMID)),
+                 left_join(.,
+                           p1_drb_comids_all_tribs %>%
+                             mutate(COMID = as.character(COMID)), 
                            by = 'COMID') %>%
-                   group_by(PRMS_segid) %>%
+               # Dissolving by PRMS segid
+                   group_by(segidnat) %>%
                    dplyr::summarize(geometry = sf::st_union(geometry))
   ),
   
