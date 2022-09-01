@@ -20,17 +20,38 @@ p2_targets_list <- list(
   tar_target(p2_buffered_nhd_reaches_along_nhm,
              st_buffer(p1_nhd_reaches_along_NHM, dist = units::set_units(250, m))
   ),
+  
+  ## Handling error-prone PRMS_segid 158_1
+  tar_target(
+    p2_prms_158_1_buffered, 
+    p2_buffered_nhd_reaches_along_nhm %>%
+      filter(comid %in% p1_drb_comids_all_tribs[p1_drb_comids_all_tribs$PRMS_segid == '158_1',]$COMID) %>% 
+    mutate(COMID = as.character(comid)) %>% 
+    left_join(.,
+              p1_drb_comids_all_tribs %>%
+                mutate(COMID = as.character(COMID)), 
+              by = 'COMID') %>%
+    st_make_valid() %>% 
+    # Dissolving by PRMS segid
+    group_by(PRMS_segid) %>%
+    dplyr::summarize(geometry = sf::st_union(geometry))
+    ),
 
   tar_target(p2_buffered_nhd_reaches_along_nhm_PRMS,
              p2_buffered_nhd_reaches_along_nhm %>% 
+               filter(!comid %in% p1_drb_comids_all_tribs[p1_drb_comids_all_tribs$PRMS_segid == '158_1',]$COMID) %>% 
                mutate(COMID = as.character(comid)) %>% 
                  left_join(.,
                            p1_drb_comids_all_tribs %>%
                              mutate(COMID = as.character(COMID)), 
                            by = 'COMID') %>%
+               st_make_valid() %>% 
                # Dissolving by PRMS segid
-                   group_by(segidnat) %>%
-                   dplyr::summarize(geometry = sf::st_union(geometry))
+                   group_by(PRMS_segid) %>%
+                   dplyr::summarize(geometry = sf::st_union(geometry)) %>% 
+               # binding the specially handled PRMS_segid 158_1. In p2_prms_158_1_buffered, only second buffer is a valid polygon
+               rbind(., p2_prms_158_1_buffered[2,])
+               
   ),
   
   # Reach -- depth_to_bedrock data for each nhm reach buffered 250m  
@@ -39,8 +60,9 @@ p2_targets_list <- list(
   ## original source: http://globalchange.bnu.edu.cn/research/dtb.jsp. Data was clipped to drb before getting added to caldera.
   tar_target(p2_depth_to_bedrock_reaches_along_nhm,
              raster_in_polygon_weighted_mean(raster = Shangguan_dtb_cm_250m_clip_path,
-                                             nhd_polygon_layer =  p2_buffered_nhd_reaches_along_nhm,
-                                             feature_id = 'comid')
+                                             nhd_polygon_layer =  p2_buffered_nhd_reaches_along_nhm_PRMS,
+                                             feature_id = 'PRMS_segid', 
+                                             weighted_mean_col_name = 'dtb_weighted_mean')
   ),
   
   # Catchment -- depth_to_bedrock data for each nhm upstream catchment 
