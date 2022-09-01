@@ -61,6 +61,13 @@ p1_targets_list <- list(
     }
   ),
   
+  # Track depth to bedrock raster dataset in 1_fetch/in
+  tar_target(
+    p1_depth_to_bedrock_tif,
+    Shangguan_dtb_cm_250m_clip_path,
+    format = "file"
+  ),
+  
   
   # Manually download temperature site locations from ScienceBase using the
   # commented-out code below and place the downloaded zip file in 1_fetch/in. 
