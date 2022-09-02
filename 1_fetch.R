@@ -10,8 +10,9 @@ p1_targets_list <- list(
   # Important! This pipeline uses two versions of the NHM-NHDv2 crosswalk table
   # for different purposes. All targets pertaining to the "dendritic" version
   # of the crosswalk table will include the string "dendritic" in the name.
-  # Read in the NHM - NHDv2 crosswalk file that contains all NHDPlusv2 COMIDs
-  # in the DRB (including divergent reaches and reaches without catchments)
+  # Crosswalk #1: Read in the NHM - NHDv2 crosswalk file that contains all 
+  # NHDPlusv2 COMIDs in the DRB (including divergent reaches and reaches 
+  # without catchments)
   tar_target(
     p1_GFv1_NHDv2_xwalk,
     read_csv(GFv1_NHDv2_xwalk_url,col_types = cols(.default = "c"))
@@ -35,13 +36,14 @@ p1_targets_list <- list(
     download_nhdplus_flowlines(p1_drb_comids_all_tribs$COMID)
   ),
   
-  ## May take a while to run
+  # Download all NHDPlusv2 catchments in the DRB (may take awhile to run).
   tar_target(
     p1_nhd_catchments,
     get_nhdplusv2_catchments(comid = p1_nhd_reaches$comid)
   ),
   
-  ## polygons are analogous to HRU 
+  # Dissolve NHDPlusv2 catchments to create a single catchment polygon for
+  # each NHM segment (analogous to HRU).
   tar_target(
     p1_nhm_catchments_dissolved,
     {sf_use_s2(FALSE)
@@ -53,18 +55,11 @@ p1_targets_list <- list(
     }
   ),
   
-  # Track depth to bedrock raster dataset in 1_fetch/in
-  tar_target(
-    p1_depth_to_bedrock_tif,
-    Shangguan_dtb_cm_250m_clip_path,
-    format = "file"
-  ),
-  
-  # Read in the NHM - NHDv2 crosswalk file that corresponds to the *dendritic* 
-  # network only (i.e., divergent reaches have been omitted). This version of
-  # the crosswalk table was used to build the network distance matrix in 
-  # drb-network-prep, and so includes the COMIDs that we will make predictions
-  # on in the NHD-downscaling set of experiments. 
+  # Crosswalk #2: Read in the NHM - NHDv2 crosswalk file that corresponds to 
+  # the *dendritic* network only (i.e., divergent reaches have been omitted). 
+  # This version of the crosswalk table was used to build the network distance
+  # matrix in drb-network-prep, and so includes the COMIDs that we will make 
+  # predictions on in the NHD-downscaling set of experiments. 
   tar_target(
     p1_GFv1_NHDv2_xwalk_dendritic,
     read_csv(GFv1_NHDv2_xwalk_dendritic_url,col_types = cols(.default = "c"))
@@ -191,16 +186,16 @@ p1_targets_list <- list(
   ),
   
   # STATSGO SOIL Characteristics
-  ## get selected child items nhdv2 STATSGO Soil Characteristics
-  ## 1) Text attributes and 2) Layer attributes
+  # get selected child items nhdv2 STATSGO Soil Characteristics,
+  # including 1) texture and 2) layer attributes.
   tar_target(
     p1_selected_statsgo_sbid_children,
     sbtools::item_list_children(sb_id = nhd_statsgo_parent_sbid) %>% 
       Filter(function(x){str_detect(x[['title']],'Text|Layer')},
              .)
-    ),
+  ),
   
-  ## download selected CONUS STATSGO datasets from Science base
+  # Download selected CONUS STATSGO datasets from Science base
   tar_target(
     p1_download_statsgo_text_layer_zip,
     lapply(p1_selected_statsgo_sbid_children,
@@ -210,9 +205,10 @@ p1_targets_list <- list(
                                         overwrite_file = TRUE)}
            ) %>%
       unlist(),
-    format = 'file'),
+    format = 'file'
+  ),
 
-  ## Combine statsgo TEXT and Layer Attributes for CAT and TOT and filter to drb
+  # Combine statsgo TEXT and Layer Attributes for CAT and TOT and filter to drb
   tar_target(
     p1_statsgo_soil_df,
     sb_read_filter_by_comids(data_path = '1_fetch/out/statsgo',
@@ -222,5 +218,13 @@ p1_targets_list <- list(
                                                         "NO4AVE","SILTAVE","CLAYAVE",
                                                         "SANDAVE",'WTDEP'),
                              cbind = TRUE)
+  ),
+  
+  # Track depth to bedrock raster dataset in 1_fetch/in
+  tar_target(
+    p1_depth_to_bedrock_tif,
+    Shangguan_dtb_cm_250m_clip_path,
+    format = "file"
   )
+  
 )
