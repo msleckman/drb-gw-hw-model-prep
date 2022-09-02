@@ -111,11 +111,12 @@ p2_targets_list <- list(
         # format dates
         mutate(date = lubridate::as_date(time, tz = "UTC")) %>%
         # convert gridmet precip units from inches to meters, and temperature
-        # units from degrees Farenheit to degrees Celsius. Note that we are 
-        # using daily minimum temperature from gridmet and calling that 
-        # "seg_tave_air", which we assume corresponds approximately to the 
-        # PRMS-SNTemp variable with the same name. 
-        mutate(seg_tave_air = ((tmmn - 32) * (5/9)),
+        # units from degrees Farenheit to degrees Celsius. 
+        # Note that we average the daily minimum and maximum temperatures from
+        # gridmet and call that "seg_tave_air", which we assume corresponds 
+        # approximately to the PRMS-SNTemp variable with the same name. 
+        mutate(tmmean = rowMeans(select(., c(tmmn,tmmx))),
+               seg_tave_air = ((tmmean - 32) * (5/9)),
                seg_rain = pr * 0.0254) %>%
         # rename gridmet columns to conform to PRMS-SNTemp names used in river-dl
         select(COMID, date, seg_tave_air, srad, seg_rain) %>%
