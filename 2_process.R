@@ -21,30 +21,10 @@ p2_targets_list <- list(
              st_buffer(p1_nhd_reaches_along_NHM, dist = units::set_units(250, m))
   ),
   
-  ## Handling error-prone PRMS_segid 158_1 for dissolve step
-  ## Approach: dissolve just COMID associated with 158_1. The dissolve process outputs two rows strangely - a linestring and a polygon. 
-  ## Row 2 is correct
-  tar_target(
-    p2_prms_158_1_buffered, 
-    {p2_buffered_nhd_reaches_along_nhm %>%
-      filter(comid %in% p1_drb_comids_all_tribs[p1_drb_comids_all_tribs$PRMS_segid == '158_1',]$COMID) %>% 
-    mutate(COMID = as.character(comid)) %>% 
-    left_join(.,
-              p1_drb_comids_all_tribs %>%
-                mutate(COMID = as.character(COMID)), 
-              by = 'COMID') %>%
-    st_make_valid() %>% 
-    # Dissolving by PRMS segid
-    group_by(PRMS_segid) %>%
-    dplyr::summarize(geometry = sf::st_union(geometry))}
-    ),
-
   ## Dissolving all reaches to prms scale (joining with xwalk table to do this), except 158_1 which is tacked on below
   tar_target(p2_buffered_nhd_reaches_along_nhm_PRMS,
              p2_buffered_nhd_reaches_along_nhm %>% 
-               filter(!comid %in%
-                        p1_drb_comids_all_tribs[p1_drb_comids_all_tribs$PRMS_segid == '158_1',]$COMID) %>% 
-               mutate(COMID = as.character(comid)) %>%
+                mutate(COMID = as.character(comid)) %>%
                left_join(.,
                            p1_drb_comids_all_tribs %>%
                              mutate(COMID = as.character(COMID)), 
@@ -52,10 +32,11 @@ p2_targets_list <- list(
                st_make_valid() %>% 
                # Dissolving by PRMS segid
                    group_by(PRMS_segid) %>%
-                   dplyr::summarize(geometry = sf::st_union(geometry)) %>% 
-               # binding the specially handled PRMS_segid 158_1. In p2_prms_158_1_buffered, only second buffer is a valid polygon
-               rbind(., p2_prms_158_1_buffered[2,])
-               
+                   dplyr::summarize(geometry = sf::st_union(geometry)) %>%
+              ## ommiting any linestrings that seem to appear when dissolving buffered reaches. 
+            filter(!grepl('LINESTRING',st_geometry_type(geometry))) %>%
+              ungroup()
+           
   ),
   
   
