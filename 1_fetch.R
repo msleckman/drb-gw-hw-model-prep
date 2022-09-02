@@ -1,6 +1,7 @@
 source("1_fetch/src/download_nhdplus_flowlines.R")
 source('1_fetch/src/sb_read_filter_by_comids.R')
 source("1_fetch/src/download_sb_file.R")
+source("1_fetch/src/download_nhdplus_catchments.R")
 source("1_fetch/src/download_file.R")
 source("1_fetch/src/read_netcdf.R")
 
@@ -41,7 +42,33 @@ p1_targets_list <- list(
     p1_nhd_reaches,
     download_nhdplus_flowlines(p1_drb_comids_all_tribs$COMID)
   ),
-
+  
+  ## May take a while to run
+  tar_target(
+    p1_nhd_catchments,
+    get_nhdplusv2_catchments(comid = p1_nhd_reaches$comid)
+  ),
+  
+  ## polygons are analogous to HRU 
+  tar_target(
+    p1_nhm_catchments_dissolved,
+    {sf_use_s2(FALSE)
+      left_join(p1_nhd_catchments %>% mutate(COMID = as.character(COMID)),
+                p1_drb_comids_all_tribs %>% mutate(COMID = as.character(COMID)),
+                by = 'COMID') %>%
+        group_by(PRMS_segid) %>%
+        dplyr::summarize(geometry = sf::st_union(geometry))
+    }
+  ),
+  
+  # Track depth to bedrock raster dataset in 1_fetch/in
+  tar_target(
+    p1_depth_to_bedrock_tif,
+    Shangguan_dtb_cm_250m_clip_path,
+    format = "file"
+  ),
+  
+  
   # Manually download temperature site locations from ScienceBase using the
   # commented-out code below and place the downloaded zip file in 1_fetch/in. 
   # Note that you'll be prompted for your username and password and will need 
