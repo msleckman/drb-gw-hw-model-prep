@@ -70,9 +70,9 @@ prepare_nhd_static_inputs <- function(nhd_flowlines, prms_inputs, nhd_nhm_xwalk)
 #' mean width, reach slope, reach elevation, and meteorological driver data.
 #' 
 #' @param nhd_static_inputs data frame containing NHDPlusv2 static input data.
-#' Must contain column "COMID".
+#' Must contain columns "COMID" and "date".
 #' @param climate_inputs data frame containing daily meteorological data to join
-#' with the NHDPlusv2 static attributes. Must contain column "COMID".
+#' with the NHDPlusv2 static attributes. Must contain columns "COMID" and "date".
 #' @param prms_dynamic_inputs data frame containing daily dynamic inputs from the
 #' PRMS-SNTemp model. Must include columns "date".
 #' @param earliest_date character string with format "YYYY-MM-DD" that indicates
@@ -95,13 +95,11 @@ combine_nhd_input_drivers <- function(nhd_static_inputs, climate_inputs, prms_dy
   nhd_all_inputs <- nhd_static_inputs %>%
     left_join(y = mutate(climate_inputs, COMID = as.character(COMID)), 
               by = "COMID") %>%
-    mutate(date = lubridate::as_date(time)) %>%
     left_join(y = prms_dynamic_inputs, by = c("segidnat","date")) %>%
     filter(date >= earliest_date, date <= latest_date) %>%
     relocate(segidnat, .after = COMID) %>%
     relocate(subsegid, .after = segidnat) %>%
-    relocate(time, .after = subsegid) %>%
-    select(-date)
+    relocate(date, .after = subsegid) 
   
   return(nhd_all_inputs)
   

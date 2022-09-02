@@ -108,12 +108,17 @@ p2_targets_list <- list(
                           p2_nhd_mainstem_reaches_w_width$comid) %>%
         as_tibble() %>%
         relocate(c(COMID,time), .before = "tmmx") %>%
+        # format dates
+        mutate(date = lubridate::as_date(time, tz = "UTC")) %>%
         # convert gridmet precip units from inches to meters, and temperature
-        # units from degrees Farenheit to degrees Celsius
+        # units from degrees Farenheit to degrees Celsius. Note that we are 
+        # using daily minimum temperature from gridmet and calling that 
+        # "seg_tave_air", which we assume corresponds approximately to the 
+        # PRMS-SNTemp variable with the same name. 
         mutate(seg_tave_air = ((tmmn - 32) * (5/9)),
                seg_rain = pr * 0.0254) %>%
         # rename gridmet columns to conform to PRMS-SNTemp names used in river-dl
-        select(COMID, time, seg_tave_air, srad, seg_rain) %>%
+        select(COMID, date, seg_tave_air, srad, seg_rain) %>%
         rename(seginc_swrad = srad)
     }
   ),
@@ -159,7 +164,7 @@ p2_targets_list <- list(
   tar_target(
     p2_input_drivers_nhd_zarr,
     write_df_to_zarr(p2_input_drivers_nhd, 
-                     index_cols = c("time", "COMID"), 
+                     index_cols = c("date", "COMID"), 
                      "2_process/out/nhdv2_inputs_io.zarr"),
     format = "file"
   )
