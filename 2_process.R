@@ -24,7 +24,7 @@ p2_targets_list <- list(
   ## Handling error-prone PRMS_segid 158_1
   tar_target(
     p2_prms_158_1_buffered, 
-    p2_buffered_nhd_reaches_along_nhm %>%
+    {p2_buffered_nhd_reaches_along_nhm %>%
       filter(comid %in% p1_drb_comids_all_tribs[p1_drb_comids_all_tribs$PRMS_segid == '158_1',]$COMID) %>% 
     mutate(COMID = as.character(comid)) %>% 
     left_join(.,
@@ -34,12 +34,13 @@ p2_targets_list <- list(
     st_make_valid() %>% 
     # Dissolving by PRMS segid
     group_by(PRMS_segid) %>%
-    dplyr::summarize(geometry = sf::st_union(geometry))
+    dplyr::summarize(geometry = sf::st_union(geometry))}
     ),
 
   tar_target(p2_buffered_nhd_reaches_along_nhm_PRMS,
              p2_buffered_nhd_reaches_along_nhm %>% 
-               filter(!comid %in% p1_drb_comids_all_tribs[p1_drb_comids_all_tribs$PRMS_segid == '158_1',]$COMID) %>% 
+               filter(!comid %in%
+                        p1_drb_comids_all_tribs[p1_drb_comids_all_tribs$PRMS_segid == '158_1',]$COMID) %>% 
                mutate(COMID = as.character(comid)) %>% 
                  left_join(.,
                            p1_drb_comids_all_tribs %>%
@@ -59,7 +60,7 @@ p2_targets_list <- list(
   ## Dataset accessible on caldera in project folder sub-dir: 1_fetch/in. scp to to local in the 1_fetch/in folder in order to run this piece of pipeline
   ## original source: http://globalchange.bnu.edu.cn/research/dtb.jsp. Data was clipped to drb before getting added to caldera.
   tar_target(p2_depth_to_bedrock_reaches_along_nhm,
-             raster_in_polygon_weighted_mean(raster = Shangguan_dtb_cm_250m_clip_path,
+             raster_in_polygon_weighted_mean(raster = p1_depth_to_bedrock_tif,
                                              nhd_polygon_layer =  p2_buffered_nhd_reaches_along_nhm_PRMS,
                                              feature_id = 'PRMS_segid', 
                                              weighted_mean_col_name = 'dtb_weighted_mean')
@@ -67,10 +68,13 @@ p2_targets_list <- list(
   
   # Catchment -- depth_to_bedrock data for each nhm upstream catchment 
   tar_target(p2_depth_to_bedrock_catchments_along_nhm_dissolved,
-             raster_in_polygon_weighted_mean(raster = Shangguan_dtb_cm_250m_clip_path,
+             raster_in_polygon_weighted_mean(raster = p1_depth_to_bedrock_tif,
                                              nhd_polygon_layer =  p1_nhm_catchments_dissolved,
-                                             feature_id = 'segidnat',
-                                             weighted_mean_col_name  = 'dtb_weighted_mean')
+                                             feature_id = 'PRMS_segid',
+                                             weighted_mean_col_name  = 'dtb_weighted_mean') %>% 
+               ## tacking on 287_1 dtb value for reach because it doesn't have a catchment 
+               rbind(.,
+                     p2_depth_to_bedrock_reaches_along_nhm[p2_depth_to_bedrock_reaches_along_nhm$PRMS_segid == '287_1',])
   ),
   
   
