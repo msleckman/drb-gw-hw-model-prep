@@ -27,6 +27,15 @@ p1_targets_list <- list(
       rename(COMID = comid_cat)
   ),
   
+  # Reshape crosswalk table to return all COMIDs that overlap each NHM segment.
+  tar_target(
+    p1_drb_comids_segs, 
+    p1_GFv1_NHDv2_xwalk %>%
+      select(PRMS_segid, segidnat, comid_seg) %>% 
+      tidyr::separate_rows(comid_seg,sep=";") %>% 
+      rename(COMID = comid_seg)
+  ),
+  
   # Use crosswalk table to fetch all NHDv2 reaches in the DRB. These COMIDs 
   # should be used for preparing feature data, including aggregating feature 
   # values from the NHD-scale to the NHM-scale and/or for deriving feature 
@@ -34,6 +43,12 @@ p1_targets_list <- list(
   tar_target(
     p1_nhd_reaches,
     download_nhdplus_flowlines(p1_drb_comids_all_tribs$COMID)
+  ),
+  
+  # Use crosswalk table to fetch just the NHDv2 reaches that overlap the NHM network.
+  tar_target(
+    p1_nhd_reaches_along_NHM,
+    download_nhdplus_flowlines(p1_drb_comids_segs$COMID)
   ),
   
   # Download all NHDPlusv2 catchments in the DRB (may take awhile to run).
