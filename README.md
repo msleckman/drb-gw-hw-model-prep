@@ -4,26 +4,9 @@ Code repo to prepare groundwater and headwater-related datasets for modeling riv
 This repo contains a targets pipeline for compiling datasets and a snakemake workflow for extracting simulated groundwater discharge from a MODFLOW groundwater model
 
 ## Extracting the catchment / reach attributes
-The scripts to compile the catchment attributes utilize an R targets pipeline that is initialized with the "_targets.R" file in the main directory.  
+The scripts to compile the catchment attributes use an R targets pipeline that is initialized with the "_targets.R" file in the main directory.  
 
-Note that the pipeline depends on temperature data compiled as part of the DRB temperature forecasting project. The data release containing the temperature data is still *in process*. In the meantime, take the following steps to download the appropriate files and run the pipeline:  
-
-
-```
-# Download temperature site locations and place in 1_fetch/in:
-sbtools::authenticate_sb()
-download_sb_file(sb_id = "623e54c4d34e915b67d83580",
-                 file_name = "study_monitoring_sites.zip",
-                 out_dir = "1_fetch/in")
-                 
-# Download unaggregated temperature observations and place in 1_fetch/in:
-sbtools::authenticate_sb()
-download_sb_file(sb_id = "623e550ad34e915b67d8366e",
-                 file_name = "unaggregated_temperature_observations_drb.zip",
-                 out_dir = "1_fetch/in")
-
-```
-
+Note that the pipeline depends on temperature data compiled as part of the DRB temperature forecasting project. Temperature data are contained in a [data release](https://www.sciencebase.gov/catalog/item/623e4418d34e915b67d7dd78) on ScienceBase.
 
 
 ## Extracting the MODFLOW outputs
