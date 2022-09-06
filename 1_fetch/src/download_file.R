@@ -59,8 +59,8 @@ download_sb_file <- function(sb_id, out_dir, file_name = NULL, overwrite_file = 
           grepl('.zip',file_name),
           sprintf(sb_str_format_url,
                   sb_id,
-                  # rm-ing `.zip` (nchar = 4) out the string
-                  substr(file_name, start = 1, stop = nchar(file_name)-4)),
+                  # rm-ing `.zip` out the string
+                  sub('.zip','',file_name)),
           sprintf(sb_str_format_url, sb_id, file_name))
         
         message(paste('File not directly accessible with input sb_id using sbtools.\nDownloading', file_name, 'directly from:', query))
