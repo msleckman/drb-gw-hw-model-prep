@@ -43,6 +43,8 @@ p1_targets_list <- list(
     download_nhdplus_flowlines(p1_drb_comids_all_tribs$COMID)
   ),
   
+  
+  # Fetch all catchments of the NHv2 reaches in the DRB 
   ## May take a while to run
   tar_target(
     p1_nhd_catchments,
