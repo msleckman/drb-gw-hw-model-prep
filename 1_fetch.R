@@ -149,20 +149,18 @@ p1_targets_list <- list(
     read_csv(p1_drb_temp_obs_csv, col_types = list(seg_id_nat = "c"))
   ),
   
-  # Manually download PRMS-SNTemp model driver data from ScienceBase 
-  # using the commented-out code below and place the download zip file in 
-  # 1_fetch/in. Note that you'll be prompted for your username and password
-  # and will need authorization to download the model driver data while the 
-  # data release is still in process:
-  #sbtools::authenticate_sb()
-  #download_sb_file(sb_id = "623e5587d34e915b67d83806",
-  #                 file_name = "uncal_sntemp_input_output.nc.zip",
-  #                 out_dir = "1_fetch/in")
+  # Download PRMS-SNTemp model driver data from ScienceBase 
   tar_target(
     p1_sntemp_input_output_zip,
-    "1_fetch/in/uncal_sntemp_input_output.nc.zip",
+    download_sb_file(sb_id = "623e5587d34e915b67d83806",
+                     file_name = "uncal_sntemp_input_output.nc.zip",
+                     out_dir = "1_fetch/out"),
     format = "file"
   ),
+  
+  # Unzip PRMS-SNTemp model driver data and save netcdf to 1_fetch/out
+  # TODO: Getting the following error message right now: error 1 in extracting from
+  # zip file (I cannot manually unzip the downloaded file, either)
   tar_target(
     p1_sntemp_input_output_nc,
     unzip(zipfile = p1_sntemp_input_output_zip, 
