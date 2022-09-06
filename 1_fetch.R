@@ -159,8 +159,6 @@ p1_targets_list <- list(
   ),
   
   # Unzip PRMS-SNTemp model driver data and save netcdf to 1_fetch/out
-  # TODO: Getting the following error message right now: error 1 in extracting from
-  # zip file (I cannot manually unzip the downloaded file, either)
   tar_target(
     p1_sntemp_input_output_nc,
     unzip(zipfile = p1_sntemp_input_output_zip, 
