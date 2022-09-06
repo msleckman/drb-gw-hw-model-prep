@@ -177,6 +177,11 @@ p2_targets_list <- list(
   ),
   
   # Format NHM-scale attributes, including empirical width
+  # TODO: the NHM attributes table below includes 458 rows because subsegid 287_1
+  # (which corresponds with COMID 4188275) does not have a width estimate. This 
+  # segment is functionally omitted in p2_dendritic_nhd_reaches_along_NHM_w_cats
+  # because it doesn't have an NHD catchment area and therefore does not have
+  # meteorological driver data either. 
   tar_target(
     p2_static_inputs_nhm_formatted,
     p2_static_input_drivers_nhd_formatted %>%
