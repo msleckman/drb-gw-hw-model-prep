@@ -153,7 +153,7 @@ p1_targets_list <- list(
   tar_target(
     p1_sntemp_input_output_zip,
     download_sb_file(sb_id = "623e5587d34e915b67d83806",
-                     file_name = "uncal_sntemp_input_output.nc.zip",
+                     file_name = "uncal_sntemp_input_output.zip",
                      out_dir = "1_fetch/out"),
     format = "file"
   ),
@@ -177,9 +177,10 @@ p1_targets_list <- list(
   
   # Read in meteorological data aggregated to NHDPlusV2 catchments for the 
   # DRB (prepped in https://github.com/USGS-R/drb_gridmet_tools). Note that
-  # the DRB met data file must be stored in 1_fetch/in. If working outside
-  # of tallgrass/caldera, this file will need to be downloaded from the
-  # PGDL-DO project's S3 bucket and manually placed in 1_fetch/in.
+  # the DRB met data file must be stored in 1_fetch/in. 
+  # If working outside of tallgrass/caldera, this file will need to
+  # be downloaded from the PGDL-DO project's S3 bucket and manually placed in 1_fetch/in.
+  # SCP from caldera to local 1_fetch/in/ (in caldera impd pump path :  ./drb-do/drb-do-ml-lkoenig/drb-do-ml/1_fetch/in) 
   tar_target(
     p1_drb_nhd_gridmet,
     "1_fetch/in/drb_climate_2022_06_14.nc",
