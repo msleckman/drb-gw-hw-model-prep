@@ -1,6 +1,5 @@
 source("1_fetch/src/download_nhdplus_flowlines.R")
 source('1_fetch/src/sb_read_filter_by_comids.R')
-source("1_fetch/src/download_sb_file.R")
 source("1_fetch/src/download_nhdplus_catchments.R")
 source("1_fetch/src/download_file.R")
 source("1_fetch/src/read_netcdf.R")
@@ -97,19 +96,22 @@ p1_targets_list <- list(
     download_nhdplus_flowlines(p1_drb_comids_dendritic_segs$COMID)
   ),
   
-  # Manually download temperature site locations from ScienceBase using the
-  # commented-out code below and place the downloaded zip file in 1_fetch/in. 
-  # Note that you'll be prompted for your username and password and will need 
-  # authorization to download the temperature files while the data release is 
-  # still in process:
-  # sbtools::authenticate_sb()
-  # download_sb_file(sb_id = "623e54c4d34e915b67d83580",
-  #                 file_name = "study_monitoring_sites.zip",
-  #                 out_dir = "1_fetch/in")
+  # Download temperature site locations from ScienceBase
+  tar_target(
+    p1_drb_temp_sites_zip,
+    download_sb_file(sb_id = "623e54c4d34e915b67d83580",
+                     file_name = "study_monitoring_sites.zip",
+                     out_dir = "1_fetch/out"),
+    format = "file"
+  ),
+
+  # Unzip downloaded temperature site locations and save shp file in 1_fetch/out
+  # TODO: Getting the following error message right now: error 1 in extracting from
+  # zip file (I cannot manually unzip the downloaded file, either)
   tar_target(
     p1_drb_temp_sites_shp,
     {
-      file_names <- unzip(zipfile = "1_fetch/in/study_monitoring_sites.zip", 
+      file_names <- unzip(zipfile = p1_drb_temp_sites_zip, 
                           exdir = "1_fetch/out", 
                           overwrite = TRUE)
       grep(".shp",file_names, value = TRUE, ignore.case = TRUE)
