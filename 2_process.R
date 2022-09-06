@@ -80,7 +80,7 @@ p2_targets_list <- list(
   
   # Pull static segment attributes from PRMS SNTemp model driver data
   tar_target(
-    p2_static_input_drivers_prms,
+    p2_static_inputs_prms,
     p1_sntemp_input_output %>%
       group_by(seg_id_nat) %>%
       summarize(seg_elev = unique(seg_elev),
@@ -92,7 +92,7 @@ p2_targets_list <- list(
   
   # Pull dynamic segment attributes from PRMS SNTemp model driver data
   tar_target(
-    p2_dynamic_input_drivers_prms,
+    p2_dynamic_inputs_prms,
     p1_sntemp_input_output %>%
       mutate(segidnat = as.character(seg_id_nat)) %>%
       select(segidnat, date, seginc_potet)
@@ -135,16 +135,16 @@ p2_targets_list <- list(
   # NHDPlusv2 scales (i.e., seg_slope ~ slope_len_wtd_mean; seg_elev ~ seg_elev_min; 
   # seg_width ~ seg_width_max). 
   tar_target(
-    p2_static_input_drivers_nhd,
+    p2_static_inputs_nhd,
     prepare_nhd_static_inputs(nhd_flowlines = p2_nhd_mainstem_reaches_w_width,
-                              prms_inputs = p2_static_input_drivers_prms,
+                              prms_inputs = p2_static_inputs_prms,
                               nhd_nhm_xwalk = p1_drb_comids_all_tribs)
   ),
   
   # Format NHD-scale static input drivers
   tar_target(
-    p2_static_input_drivers_nhd_formatted,
-    p2_static_input_drivers_nhd %>%
+    p2_static_inputs_nhd_formatted,
+    p2_static_inputs_nhd %>%
       select(COMID, segidnat, subsegid, 
              est_width_m, min_elev_m, slope) %>%
       rename(seg_width_empirical = est_width_m,
@@ -160,9 +160,9 @@ p2_targets_list <- list(
   # days of climate data across each of 3,173 COMIDs = 50,133,400 total rows.
   tar_target(
     p2_input_drivers_nhd,
-    combine_nhd_input_drivers(nhd_static_inputs = p2_static_input_drivers_nhd_formatted, 
+    combine_nhd_input_drivers(nhd_static_inputs = p2_static_inputs_nhd_formatted, 
                               climate_inputs = p2_met_data_nhd_mainstem_reaches,
-                              prms_dynamic_inputs = p2_dynamic_input_drivers_prms,
+                              prms_dynamic_inputs = p2_dynamic_inputs_prms,
                               earliest_date = "1979-01-01",
                               latest_date = "2022-04-04")
   ),
@@ -184,7 +184,7 @@ p2_targets_list <- list(
   # meteorological driver data either. 
   tar_target(
     p2_static_inputs_nhm_formatted,
-    p2_static_input_drivers_nhd_formatted %>%
+    p2_static_inputs_nhd_formatted %>%
       group_by(segidnat, subsegid) %>%
       summarize(seg_width_empirical = max(seg_width_empirical),
                 .groups = "drop")
