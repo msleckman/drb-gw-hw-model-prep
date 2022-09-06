@@ -125,18 +125,19 @@ p1_targets_list <- list(
     sf::read_sf(p1_drb_temp_sites_shp, crs = 4326)
   ),
   
-  # Manually download unaggregated temperature observations from ScienceBase using
-  # the commented-out code below and place the downloaded zip file in 1_fetch/in. 
-  # Note that you'll be prompted for your username and password and will need 
-  # authorization to download the temperature files while the data release is 
-  # still in process:
-  # sbtools::authenticate_sb()
-  # download_sb_file(sb_id = "623e550ad34e915b67d8366e",
-  #                 file_name = "unaggregated_temperature_observations_drb.zip",
-  #                 out_dir = "1_fetch/in")
+  # Download unaggregated temperature observations from ScienceBase 
+  tar_target(
+    p1_drb_temp_obs_zip,
+    download_sb_file(sb_id = "623e550ad34e915b67d8366e",
+                     file_name = "unaggregated_temperature_observations_drb.zip",
+                     out_dir = "1_fetch/out"),
+    format = "file"
+  ),
+
+  # Unzip unaggregated temperature observations and save csv file in 1_fetch/out
   tar_target(
     p1_drb_temp_obs_csv,
-    unzip(zipfile = "1_fetch/in/unaggregated_temperature_observations_drb.zip", 
+    unzip(zipfile = p1_drb_temp_obs_zip, 
           overwrite = TRUE, 
           exdir = "1_fetch/out"),
     format = "file"
