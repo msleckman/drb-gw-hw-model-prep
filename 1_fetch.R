@@ -96,7 +96,8 @@ p1_targets_list <- list(
     download_nhdplus_flowlines(p1_drb_comids_dendritic_segs$COMID)
   ),
   
-  # Download temperature site locations from ScienceBase
+  # Download temperature site locations from ScienceBase:
+  # https://www.sciencebase.gov/catalog/item/623e54c4d34e915b67d83580
   tar_target(
     p1_drb_temp_sites_zip,
     download_sb_file(sb_id = "623e54c4d34e915b67d83580",
@@ -125,7 +126,8 @@ p1_targets_list <- list(
     sf::read_sf(p1_drb_temp_sites_shp, crs = 4326)
   ),
   
-  # Download unaggregated temperature observations from ScienceBase 
+  # Download unaggregated temperature observations from ScienceBase:
+  # https://www.sciencebase.gov/catalog/item/623e550ad34e915b67d8366e
   tar_target(
     p1_drb_temp_obs_zip,
     download_sb_file(sb_id = "623e550ad34e915b67d8366e",
@@ -149,7 +151,8 @@ p1_targets_list <- list(
     read_csv(p1_drb_temp_obs_csv, col_types = list(seg_id_nat = "c"))
   ),
   
-  # Download PRMS-SNTemp model driver data from ScienceBase 
+  # Download PRMS-SNTemp model driver data from ScienceBase:
+  # https://www.sciencebase.gov/catalog/item/623e5587d34e915b67d83806
   tar_target(
     p1_sntemp_input_output_zip,
     download_sb_file(sb_id = "623e5587d34e915b67d83806",
