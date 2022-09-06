@@ -26,7 +26,7 @@ p2_targets_list <- list(
                        sites = p1_drb_temp_sites_sf)
   ),
   
-  # ## Dissolving all reaches to prms scale (joining with xwalk table to do this)
+  # Dissolve all reaches to NHM scale (joining with xwalk table to do this)
   tar_target(p2_buffered_nhd_reaches_along_nhm,
              p1_nhd_reaches_along_NHM %>% 
                mutate(COMID = as.character(comid)) %>%
@@ -34,17 +34,20 @@ p2_targets_list <- list(
                          p1_drb_comids_all_tribs %>%
                            mutate(COMID = as.character(COMID)), 
                          by = 'COMID') %>%
-               st_make_valid() %>% 
+               sf::st_make_valid() %>% 
                # Dissolving by PRMS segid
                group_by(PRMS_segid) %>%
                dplyr::summarize(geometry = sf::st_union(geometry)) %>% 
-               st_buffer(., dist = units::set_units(250, m))
+               sf::st_buffer(., dist = units::set_units(250, m))
   ),
   
   # Depth to bedrock processing
-  ## Note: If you do not have Shangguan_dtb_cm_250m_clip_path data, you must grab it from the caldera project folder. 
-  ## Dataset accessible on caldera in project folder sub-dir: 1_fetch/in. scp to your local 1_fetch/in folder in this repo in order to run this piece of pipeline
-  ## original source: http://globalchange.bnu.edu.cn/research/dtb.jsp. Data was clipped to drb before getting added to caldera.
+  ## Note: If you do not have Shangguan_dtb_cm_250m_clip_path data, you must grab 
+  ## it from the caldera project folder. Dataset accessible on caldera in project 
+  ## folder sub-dir: 1_fetch/in. scp to your local 1_fetch/in folder in this repo 
+  ## in order to run this piece of pipeline original source: 
+  ## http://globalchange.bnu.edu.cn/research/dtb.jsp. 
+  ## Data was clipped to drb before getting added to caldera.
   
   # Reach -- depth_to_bedrock data for each nhm reach buffered at 250m  
   tar_target(p2_depth_to_bedrock_reaches_along_nhm,
