@@ -138,6 +138,17 @@ p2_targets_list <- list(
                               nhd_nhm_xwalk = p1_drb_comids_all_tribs)
   ),
   
+  # Format NHD-scale static input drivers
+  tar_target(
+    p2_static_input_drivers_nhd_formatted,
+    p2_static_input_drivers_nhd %>%
+      select(COMID, segidnat, subsegid, 
+             est_width_m, min_elev_m, slope) %>%
+      rename(seg_width_empirical = est_width_m,
+             seg_elev = min_elev_m,
+             seg_slope = slope)
+  ),
+  
   # Combine NHD-scale static input drivers with dynamic climate drivers. 
   # Note that there is currently no pot ET analog variable at the NHD-scale,
   # so we are using seginc_potet from PRMS-SNTemp and assuming that there is 
@@ -146,19 +157,11 @@ p2_targets_list <- list(
   # days of climate data across each of 3,173 COMIDs = 50,133,400 total rows.
   tar_target(
     p2_input_drivers_nhd,
-    {
-      static_inputs <- p2_static_input_drivers_nhd %>%
-        select(COMID, segidnat, subsegid, 
-               est_width_m, min_elev_m, slope) %>%
-        rename(seg_width_mean = est_width_m,
-               seg_elev = min_elev_m,
-               seg_slope = slope)
-      combine_nhd_input_drivers(nhd_static_inputs = static_inputs, 
-                                climate_inputs = p2_met_data_nhd_mainstem_reaches,
-                                prms_dynamic_inputs = p2_dynamic_input_drivers_prms,
-                                earliest_date = "1979-01-01",
-                                latest_date = "2022-04-04")
-    }
+    combine_nhd_input_drivers(nhd_static_inputs = p2_static_input_drivers_nhd_formatted, 
+                              climate_inputs = p2_met_data_nhd_mainstem_reaches,
+                              prms_dynamic_inputs = p2_dynamic_input_drivers_prms,
+                              earliest_date = "1979-01-01",
+                              latest_date = "2022-04-04")
   ),
   
   # Save river-dl input drivers at NHDv2 resolution as a zarr data store
@@ -167,6 +170,26 @@ p2_targets_list <- list(
     write_df_to_zarr(p2_input_drivers_nhd, 
                      index_cols = c("date", "COMID"), 
                      "2_process/out/nhdv2_inputs_io.zarr"),
+    format = "file"
+  ),
+  
+  # Format NHM-scale attributes, including empirical width
+  tar_target(
+    p2_static_inputs_nhm_formatted,
+    p2_static_input_drivers_nhd_formatted %>%
+      group_by(segidnat, subsegid) %>%
+      summarize(seg_width_empirical = max(seg_width_empirical),
+                .groups = "drop")
+  ),
+  
+  # Save a feather file that contains the formatted NHM-scale attributes
+  tar_target(
+    p2_static_inputs_nhm_formatted_feather,
+    {
+      fileout <- "2_process/out/nhm_attributes.feather"
+      arrow::write_feather(p2_static_inputs_nhm_formatted, fileout)
+      fileout
+    },
     format = "file"
   )
   
