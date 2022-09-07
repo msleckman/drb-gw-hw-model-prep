@@ -63,8 +63,7 @@ p1_targets_list <- list(
   # each NHM segment (analogous to HRU).
   tar_target(
     p1_nhm_catchments_dissolved,
-    {sf_use_s2(FALSE)
-      left_join(p1_nhd_catchments %>% mutate(COMID = as.character(COMID)),
+    {left_join(p1_nhd_catchments %>% mutate(COMID = as.character(COMID)),
                 p1_drb_comids_all_tribs %>% mutate(COMID = as.character(COMID)),
                 by = 'COMID') %>%
         group_by(PRMS_segid) %>%
