@@ -96,7 +96,8 @@ p1_targets_list <- list(
   # the NHM network
   tar_target(
     p1_dendritic_nhd_reaches_along_NHM,
-    download_nhdplus_flowlines(p1_drb_comids_dendritic_segs$COMID)
+    download_nhdplus_flowlines(p1_drb_comids_dendritic_segs$COMID, 
+                               crs = crs)
   ),
   
   # Download temperature site locations from ScienceBase:
@@ -131,7 +132,7 @@ p1_targets_list <- list(
   # Read in temperature site locations
   tar_target(
     p1_drb_temp_sites_sf,
-    sf::read_sf(p1_drb_temp_sites_shp, crs = crs)
+    sf::st_read(p1_drb_temp_sites_shp) %>% st_transform(crs = crs)
   ),
   
   # Download unaggregated temperature observations from ScienceBase:
@@ -208,6 +209,7 @@ p1_targets_list <- list(
   tar_target(
     p1_ref_gages_sf,
     sf::st_read(p1_ref_gages_geojson, quiet = TRUE) %>%
+      st_transform(crs = crs) %>% 
       mutate(COMID_refgages = as.character(nhdpv2_COMID))
   ),
   

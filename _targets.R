@@ -10,7 +10,7 @@ source("1_fetch.R")
 source("2_process.R")
 
 # Define crs
-crs <-5070
+crs <- 5070
 
 
 # Define the url for the NHGFv1 to NHDv2 crosswalk 
