@@ -96,7 +96,7 @@ p1_targets_list <- list(
   tar_target(
     p1_dendritic_nhd_reaches_along_NHM,
     download_nhdplus_flowlines(p1_drb_comids_dendritic_segs$COMID, 
-                               crs = crs)
+                               crs = 4326)
   ),
   
   # Download temperature site locations from ScienceBase:
@@ -131,7 +131,7 @@ p1_targets_list <- list(
   # Read in temperature site locations
   tar_target(
     p1_drb_temp_sites_sf,
-    sf::st_read(p1_drb_temp_sites_shp) %>% st_transform(crs = crs)
+    sf::st_read(p1_drb_temp_sites_shp)
   ),
   
   # Download unaggregated temperature observations from ScienceBase:
