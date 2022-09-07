@@ -98,6 +98,13 @@ p1_targets_list <- list(
   
   # Download temperature site locations from ScienceBase:
   # https://www.sciencebase.gov/catalog/item/623e54c4d34e915b67d83580
+  # Note that we've experienced sporadic issues with downloading this file from
+  # ScienceBase, where the file will appear to download successfully but the zip
+  # file cannot be unzipped when building downstream targets. If this happens, 
+  # the following warning message will appear "In unzip(zipfile = 
+  # p1_drb_temp_sites_zip, exdir = "1_fetch/out",: error 1 in extracting from zip
+  # file" and p1_drb_temp_sites_shp will not build successfully. This problem has 
+  # been resolved by waiting a waiting a few hours and trying again. 
   tar_target(
     p1_drb_temp_sites_zip,
     download_sb_file(sb_id = "623e54c4d34e915b67d83580",
