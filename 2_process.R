@@ -66,22 +66,33 @@ p2_targets_list <- list(
                                              nhd_polygon_layer =  p1_nhm_catchments_dissolved,
                                              feature_id = 'PRMS_segid',
                                              weighted_mean_col_name  = 'dtb_weighted_mean') %>% 
-               ## tacking on 287_1 dtb value for reach because it 287_1 doesn't have a catchment 
+               # append dtb value subsegid = 287_1 because this reach doesn't have an nhd catchment 
                rbind(.,
                      p2_depth_to_bedrock_reaches_along_nhm[p2_depth_to_bedrock_reaches_along_nhm$PRMS_segid == '287_1',]) 
                
   ),
   
   
-  # Estimate mean width for each "mainstem" NHDv2 reach 
+  # Estimate mean width for each "mainstem" NHDv2 reach. 
+  # Note that one NHM segment, segidnat 1721 (subsegid 287_1) is not included
+  # in the dendritic nhd reaches w cats data frame because the only COMID that
+  # intersects the segment (COMID 4188275) does not have an NHD catchment area. 
+  # So in addition to estimating width for the COMIDs represented in 
+  # p2_dendritic_nhd_reaches_along_NHM_w_cats, we also want to estimate width 
+  # for COMID 4188275.
   tar_target(
     p2_nhd_mainstem_reaches_w_width,
-    estimate_mean_width(p2_dendritic_nhd_reaches_along_NHM_w_cats, 
-                        estimation_method = 'nwis',
-                        network_pos_variable = 'arbolate_sum',
-                        ref_gages = p1_ref_gages_sf)
+    {
+      nhd_lines <- bind_rows(p2_dendritic_nhd_reaches_along_NHM_w_cats,
+                             filter(p1_dendritic_nhd_reaches_along_NHM,
+                                    comid == "4188275"))
+      estimate_mean_width(nhd_lines, 
+                          estimation_method = 'nwis',
+                          network_pos_variable = 'arbolate_sum',
+                          ref_gages = p1_ref_gages_sf)
+    }
   ),
-  
+
   # Pull static segment attributes from PRMS SNTemp model driver data
   tar_target(
     p2_static_inputs_prms,
@@ -112,7 +123,7 @@ p2_targets_list <- list(
     {
       reticulate::source_python("2_process/src/subset_nc_to_comid.py")
       subset_nc_to_comids(p1_drb_nhd_gridmet, 
-                          p2_nhd_mainstem_reaches_w_width$comid) %>%
+                          p2_dendritic_nhd_reaches_along_NHM_w_cats$comid) %>%
         as_tibble() %>%
         relocate(c(COMID,time), .before = "tmmx") %>%
         # format dates
@@ -182,15 +193,11 @@ p2_targets_list <- list(
   ),
   
   # Format NHM-scale attributes, including empirical width
-  # TODO: the NHM attributes table below includes 458 rows because subsegid 287_1
-  # (which corresponds with COMID 4188275) does not have a width estimate. This 
-  # segment is functionally omitted in p2_dendritic_nhd_reaches_along_NHM_w_cats
-  # because it doesn't have an NHD catchment area and therefore does not have
-  # meteorological driver data either. In addition, seg_id_nat's 1437, 1442, and
-  # 1485 each have two subsegid's attached to one seg_id_nat (e.g. 3_1 and 3_2 in
-  # the case of seg_id_nat 1437). Since we only consider the seg_id_nat values when
-  # running river-dl, here we assume that the subsegments have the same width value, 
-  # which is equal to the maximum width between the two contributing subsegid's. 
+  # seg_id_nat's 1437, 1442, and 1485 each have two subsegid's attached to one 
+  # seg_id_nat (e.g. 3_1 and 3_2 in the case of seg_id_nat 1437). Since we only
+  # consider the seg_id_nat values when running river-dl, here we assume that 
+  # the sub-segments all have the same width value, which is equal to the maximum
+  # width between the two contributing subsegid's. 
   tar_target(
     p2_static_inputs_nhm_formatted,
     p2_static_inputs_nhd_formatted %>%
