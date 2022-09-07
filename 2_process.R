@@ -90,16 +90,16 @@ p2_targets_list <- list(
       summarize(seg_elev = unique(seg_elev),
                 seg_slope = unique(seg_slope),
                 seg_width = mean(seg_width, na.rm = TRUE)) %>%
-      mutate(segidnat = as.character(seg_id_nat)) %>%
-      select(segidnat, seg_elev, seg_slope, seg_width)
+      mutate(seg_id_nat = as.character(seg_id_nat)) %>%
+      select(seg_id_nat, seg_elev, seg_slope, seg_width)
   ),
   
   # Pull dynamic segment attributes from PRMS SNTemp model driver data
   tar_target(
     p2_dynamic_inputs_prms,
     p1_sntemp_input_output %>%
-      mutate(segidnat = as.character(seg_id_nat)) %>%
-      select(segidnat, date, seginc_potet)
+      mutate(seg_id_nat = as.character(seg_id_nat)) %>%
+      select(seg_id_nat, date, seginc_potet)
   ),
   
   # Subset the DRB meteorological data to only include the NHDPlusv2 catchments 
@@ -149,11 +149,12 @@ p2_targets_list <- list(
   tar_target(
     p2_static_inputs_nhd_formatted,
     p2_static_inputs_nhd %>%
-      select(COMID, segidnat, subsegid, 
+      select(COMID, seg_id_nat, subsegid, 
              est_width_m, min_elev_m, slope) %>%
       rename(seg_width_empirical = est_width_m,
              seg_elev = min_elev_m,
-             seg_slope = slope)
+             seg_slope = slope,
+             seg_id_nat = seg_id_nat)
   ),
   
   # Combine NHD-scale static input drivers with dynamic climate drivers. 
@@ -189,9 +190,10 @@ p2_targets_list <- list(
   tar_target(
     p2_static_inputs_nhm_formatted,
     p2_static_inputs_nhd_formatted %>%
-      group_by(segidnat, subsegid) %>%
+      group_by(seg_id_nat, subsegid) %>%
       summarize(seg_width_empirical = max(seg_width_empirical),
-                .groups = "drop")
+                .groups = "drop") %>%
+      mutate(seg_id_nat = as.integer(seg_id_nat))
   ),
   
   # Save a feather file that contains the formatted NHM-scale attributes

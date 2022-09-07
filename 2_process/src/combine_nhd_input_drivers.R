@@ -7,10 +7,10 @@
 #' @param nhd_flowlines sf object containing NHDPlusv2 flowline reaches. Must
 #' contain columns "comid", "minelevsmo", "maxelevsmo", "slope"
 #' @param prms_inputs data frame containing input drivers for each NHM segment.
-#' Must include columns "segidnat", "seg_elev", "seg_slope", and "seg_width"
+#' Must include columns "seg_id_nat", "seg_elev", "seg_slope", and "seg_width"
 #' @param nhd_nhm_xwalk data frame that specifies how NHDPlusv2 COMIDs map
 #' onto NHM segment identifiers. Must contain columns "COMID", "PRMS_segid",
-#' and "segidnat".
+#' and "seg_id_nat".
 #'
 #' @returns 
 #' Returns a data frame with one row per COMID in `nhd_flowlines`. Columns
@@ -53,8 +53,8 @@ prepare_nhd_static_inputs <- function(nhd_flowlines, prms_inputs, nhd_nhm_xwalk)
            seg_elev_min = min(min_elev_m, na.rm = TRUE)) %>%
     ungroup() %>%
     # join select attributes from PRMS-SNTemp
-    left_join(y = prms_inputs, by = "segidnat") %>%
-    select(COMID, segidnat, subsegid, est_width_m, slope, slope_len_wtd_mean, 
+    left_join(y = prms_inputs, by = "seg_id_nat") %>%
+    select(COMID, seg_id_nat, subsegid, est_width_m, slope, slope_len_wtd_mean, 
            lengthkm, min_elev_m, max_elev_m, seg_elev, seg_slope, seg_width, seg_width_max,
            seg_elev_min)
 
@@ -70,11 +70,11 @@ prepare_nhd_static_inputs <- function(nhd_flowlines, prms_inputs, nhd_nhm_xwalk)
 #' mean width, reach slope, reach elevation, and meteorological driver data.
 #' 
 #' @param nhd_static_inputs data frame containing NHDPlusv2 static input data.
-#' Must contain columns "COMID" and "date".
+#' Must contain columns "COMID", "date", and "seg_id_nat".
 #' @param climate_inputs data frame containing daily meteorological data to join
 #' with the NHDPlusv2 static attributes. Must contain columns "COMID" and "date".
 #' @param prms_dynamic_inputs data frame containing daily dynamic inputs from the
-#' PRMS-SNTemp model. Must include columns "date".
+#' PRMS-SNTemp model. Must include columns "date" and "seg_id_nat".
 #' @param earliest_date character string with format "YYYY-MM-DD" that indicates
 #' the earliest desired date for returned NHD-scale input drivers.
 #' @param latest_date character string with format "YYYY-MM-DD" that indicates
@@ -95,11 +95,12 @@ combine_nhd_input_drivers <- function(nhd_static_inputs, climate_inputs, prms_dy
   nhd_all_inputs <- nhd_static_inputs %>%
     left_join(y = mutate(climate_inputs, COMID = as.character(COMID)), 
               by = "COMID") %>%
-    left_join(y = prms_dynamic_inputs, by = c("segidnat","date")) %>%
+    left_join(y = prms_dynamic_inputs, by = c("seg_id_nat","date")) %>%
     filter(date >= earliest_date, date <= latest_date) %>%
-    relocate(segidnat, .after = COMID) %>%
-    relocate(subsegid, .after = segidnat) %>%
-    relocate(date, .after = subsegid) 
+    relocate(seg_id_nat, .after = COMID) %>%
+    relocate(subsegid, .after = seg_id_nat) %>%
+    relocate(date, .after = subsegid) %>%
+    mutate(seg_id_nat = as.integer(seg_id_nat))
   
   return(nhd_all_inputs)
   
