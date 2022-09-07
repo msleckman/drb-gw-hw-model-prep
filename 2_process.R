@@ -26,6 +26,30 @@ p2_targets_list <- list(
                        sites = p1_drb_temp_sites_sf)
   ),
   
+  # Match temperature observational time series to "mainstem" NHDPlusv2 flowline
+  # reaches by COMID. Rename columns to match the column names used in the aggregated
+  # temps data file in the temperature forecasting data release. 
+  tar_target(
+    p2_drb_temp_obs_w_segs,
+    p1_drb_temp_obs %>%
+      left_join(y = p2_drb_temp_sites_w_segs[,c("site_id","comid")], by = "site_id") %>%
+      rename(COMID = comid, 
+             mean_temp_c = mean_temp_degC,
+             min_temp_c = min_temp_degC,
+             max_temp_c = max_temp_degC)
+  ),
+  
+  # Save csv file containing temperature observations mapped to NHDPlusv2 COMIDs
+  tar_target(
+    p2_drb_temp_obs_w_segs_csv,
+    {
+      fileout <- "2_process/out/unaggregated_temp_observations_nhdv2.csv"
+      write_csv(p2_drb_temp_obs_w_segs, fileout)
+      fileout
+    },
+    format = "file"
+  ),
+  
   # Dissolve all reaches to NHM scale (joining with xwalk table to do this)
   tar_target(p2_buffered_nhd_reaches_along_nhm,
              p1_nhd_reaches_along_NHM %>% 
