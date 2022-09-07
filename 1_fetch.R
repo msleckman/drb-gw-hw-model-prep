@@ -41,19 +41,22 @@ p1_targets_list <- list(
   # values from raster data.
   tar_target(
     p1_nhd_reaches,
-    download_nhdplus_flowlines(p1_drb_comids_all_tribs$COMID)
+    download_nhdplus_flowlines(p1_drb_comids_all_tribs$COMID,
+                               crs = crs)
   ),
   
   # Use crosswalk table to fetch just the NHDv2 reaches that overlap the NHM network.
   tar_target(
     p1_nhd_reaches_along_NHM,
-    download_nhdplus_flowlines(p1_drb_comids_segs$COMID)
+    download_nhdplus_flowlines(p1_drb_comids_segs$COMID,
+                               crs = crs)
   ),
   
   # Download all NHDPlusv2 catchments in the DRB (may take awhile to run)
   tar_target(
     p1_nhd_catchments,
-    get_nhdplusv2_catchments(comid = p1_nhd_reaches$comid)
+    get_nhdplusv2_catchments(comid = p1_nhd_reaches$comid,
+                             crs = crs)
   ),
   
   # Dissolve NHDPlusv2 catchments to create a single catchment polygon for
@@ -128,7 +131,7 @@ p1_targets_list <- list(
   # Read in temperature site locations
   tar_target(
     p1_drb_temp_sites_sf,
-    sf::read_sf(p1_drb_temp_sites_shp, crs = 4326)
+    sf::read_sf(p1_drb_temp_sites_shp, crs = crs)
   ),
   
   # Download unaggregated temperature observations from ScienceBase:

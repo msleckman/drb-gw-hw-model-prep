@@ -3,7 +3,7 @@
 #' @param comid character string or vector of character strings containing
 #' the common identifier (COMID) of the desired flowline(s)
 #' 
-download_nhdplus_flowlines <- function(comid){
+download_nhdplus_flowlines <- function(comid, crs = 4326){
   
   # Chunk desired COMIDs into groups, where each group has no more than
   # 50 COMID's to avoid timeout errors when downloading nhdplus subsets
@@ -24,7 +24,8 @@ download_nhdplus_flowlines <- function(comid){
       flines_sub_out <- flines_sub %>%
         mutate(across(c(lakefract, surfarea, rareahload,hwnodesqkm), as.character))
     }) %>%
-    bind_rows()
+    bind_rows() %>% 
+    st_transform(crs = crs)
   
   return(flowlines)
   
