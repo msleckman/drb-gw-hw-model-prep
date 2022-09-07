@@ -38,7 +38,7 @@ write_df_to_zarr <- function(df, index_cols, out_zarr) {
   # convert to a python (pandas) DataFrame so we have access to the object methods (set_index and to_xarray)
   py_df <- reticulate::r_to_py(df)
   pd <- reticulate::import("pandas")
-  #py_df[["date"]] = pd$to_datetime(py_df$date)
+  py_df[["date"]] = pd$to_datetime(py_df$date)
   py_df[["COMID"]] = py_df$COMID$astype("str")
   
   
