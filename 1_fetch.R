@@ -1,6 +1,5 @@
 source("1_fetch/src/download_nhdplus_flowlines.R")
 source('1_fetch/src/sb_read_filter_by_comids.R')
-source("1_fetch/src/download_sb_file.R")
 source("1_fetch/src/download_nhdplus_catchments.R")
 source("1_fetch/src/download_file.R")
 source("1_fetch/src/read_netcdf.R")
@@ -97,19 +96,28 @@ p1_targets_list <- list(
     download_nhdplus_flowlines(p1_drb_comids_dendritic_segs$COMID)
   ),
   
-  # Manually download temperature site locations from ScienceBase using the
-  # commented-out code below and place the downloaded zip file in 1_fetch/in. 
-  # Note that you'll be prompted for your username and password and will need 
-  # authorization to download the temperature files while the data release is 
-  # still in process:
-  # sbtools::authenticate_sb()
-  # download_sb_file(sb_id = "623e54c4d34e915b67d83580",
-  #                 file_name = "study_monitoring_sites.zip",
-  #                 out_dir = "1_fetch/in")
+  # Download temperature site locations from ScienceBase:
+  # https://www.sciencebase.gov/catalog/item/623e54c4d34e915b67d83580
+  # Note that we've experienced sporadic issues with downloading this file from
+  # ScienceBase, where the file will appear to download successfully but the zip
+  # file cannot be unzipped when building downstream targets. If this happens, 
+  # the following warning message will appear "In unzip(zipfile = 
+  # p1_drb_temp_sites_zip, exdir = "1_fetch/out",: error 1 in extracting from zip
+  # file" and p1_drb_temp_sites_shp will not build successfully. This problem has 
+  # been resolved by waiting a waiting a few hours and trying again. 
+  tar_target(
+    p1_drb_temp_sites_zip,
+    download_sb_file(sb_id = "623e54c4d34e915b67d83580",
+                     file_name = "study_monitoring_sites.zip",
+                     out_dir = "1_fetch/out"),
+    format = "file"
+  ),
+
+  # Unzip downloaded temperature site locations and save shp file in 1_fetch/out
   tar_target(
     p1_drb_temp_sites_shp,
     {
-      file_names <- unzip(zipfile = "1_fetch/in/study_monitoring_sites.zip", 
+      file_names <- unzip(zipfile = p1_drb_temp_sites_zip, 
                           exdir = "1_fetch/out", 
                           overwrite = TRUE)
       grep(".shp",file_names, value = TRUE, ignore.case = TRUE)
@@ -123,18 +131,20 @@ p1_targets_list <- list(
     sf::read_sf(p1_drb_temp_sites_shp, crs = 4326)
   ),
   
-  # Manually download unaggregated temperature observations from ScienceBase using
-  # the commented-out code below and place the downloaded zip file in 1_fetch/in. 
-  # Note that you'll be prompted for your username and password and will need 
-  # authorization to download the temperature files while the data release is 
-  # still in process:
-  # sbtools::authenticate_sb()
-  # download_sb_file(sb_id = "623e550ad34e915b67d8366e",
-  #                 file_name = "unaggregated_temperature_observations_drb.zip",
-  #                 out_dir = "1_fetch/in")
+  # Download unaggregated temperature observations from ScienceBase:
+  # https://www.sciencebase.gov/catalog/item/623e550ad34e915b67d8366e
+  tar_target(
+    p1_drb_temp_obs_zip,
+    download_sb_file(sb_id = "623e550ad34e915b67d8366e",
+                     file_name = "unaggregated_temperature_observations_drb.zip",
+                     out_dir = "1_fetch/out"),
+    format = "file"
+  ),
+
+  # Unzip unaggregated temperature observations and save csv file in 1_fetch/out
   tar_target(
     p1_drb_temp_obs_csv,
-    unzip(zipfile = "1_fetch/in/unaggregated_temperature_observations_drb.zip", 
+    unzip(zipfile = p1_drb_temp_obs_zip, 
           overwrite = TRUE, 
           exdir = "1_fetch/out"),
     format = "file"
@@ -146,20 +156,17 @@ p1_targets_list <- list(
     read_csv(p1_drb_temp_obs_csv, col_types = list(seg_id_nat = "c"))
   ),
   
-  # Manually download PRMS-SNTemp model driver data from ScienceBase 
-  # using the commented-out code below and place the download zip file in 
-  # 1_fetch/in. Note that you'll be prompted for your username and password
-  # and will need authorization to download the model driver data while the 
-  # data release is still in process:
-  #sbtools::authenticate_sb()
-  #download_sb_file(sb_id = "623e5587d34e915b67d83806",
-  #                 file_name = "uncal_sntemp_input_output.nc.zip",
-  #                 out_dir = "1_fetch/in")
+  # Download PRMS-SNTemp model driver data from ScienceBase:
+  # https://www.sciencebase.gov/catalog/item/623e5587d34e915b67d83806
   tar_target(
     p1_sntemp_input_output_zip,
-    "1_fetch/in/uncal_sntemp_input_output.nc.zip",
+    download_sb_file(sb_id = "623e5587d34e915b67d83806",
+                     file_name = "uncal_sntemp_input_output.zip",
+                     out_dir = "1_fetch/out"),
     format = "file"
   ),
+  
+  # Unzip PRMS-SNTemp model driver data and save netcdf to 1_fetch/out
   tar_target(
     p1_sntemp_input_output_nc,
     unzip(zipfile = p1_sntemp_input_output_zip, 
@@ -176,9 +183,10 @@ p1_targets_list <- list(
   
   # Read in meteorological data aggregated to NHDPlusV2 catchments for the 
   # DRB (prepped in https://github.com/USGS-R/drb_gridmet_tools). Note that
-  # the DRB met data file must be stored in 1_fetch/in. If working outside
-  # of tallgrass/caldera, this file will need to be downloaded from the
-  # PGDL-DO project's S3 bucket and manually placed in 1_fetch/in.
+  # the DRB met data file must be stored in 1_fetch/in. 
+  # If working outside of tallgrass/caldera, this file will need to
+  # be downloaded from the PGDL-DO project's S3 bucket and manually placed in 1_fetch/in.
+  # SCP from caldera to local 1_fetch/in/ (in caldera impd pump path :  ./drb-do/drb-do-ml-lkoenig/drb-do-ml/1_fetch/in) 
   tar_target(
     p1_drb_nhd_gridmet,
     "1_fetch/in/drb_climate_2022_06_14.nc",
