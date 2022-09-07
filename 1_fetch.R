@@ -107,8 +107,6 @@ p1_targets_list <- list(
   ),
 
   # Unzip downloaded temperature site locations and save shp file in 1_fetch/out
-  # TODO: Getting the following error message right now: error 1 in extracting from
-  # zip file (I cannot manually unzip the downloaded file, either)
   tar_target(
     p1_drb_temp_sites_shp,
     {
