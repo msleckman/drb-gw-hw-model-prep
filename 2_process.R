@@ -186,11 +186,15 @@ p2_targets_list <- list(
   # (which corresponds with COMID 4188275) does not have a width estimate. This 
   # segment is functionally omitted in p2_dendritic_nhd_reaches_along_NHM_w_cats
   # because it doesn't have an NHD catchment area and therefore does not have
-  # meteorological driver data either. 
+  # meteorological driver data either. In addition, seg_id_nat's 1437, 1442, and
+  # 1485 each have two subsegid's attached to one seg_id_nat (e.g. 3_1 and 3_2 in
+  # the case of seg_id_nat 1437). Since we only consider the seg_id_nat values when
+  # running river-dl, here we assume that the subsegments have the same width value, 
+  # which is equal to the maximum width between the two contributing subsegid's. 
   tar_target(
     p2_static_inputs_nhm_formatted,
     p2_static_inputs_nhd_formatted %>%
-      group_by(seg_id_nat, subsegid) %>%
+      group_by(seg_id_nat) %>%
       summarize(seg_width_empirical = max(seg_width_empirical),
                 .groups = "drop") %>%
       mutate(seg_id_nat = as.integer(seg_id_nat))
