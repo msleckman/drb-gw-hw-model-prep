@@ -25,8 +25,7 @@ download_nhdplus_flowlines <- function(comid, crs = 4326){
       flines_sub_out <- flines_sub %>%
         mutate(across(c(lakefract, surfarea, rareahload,hwnodesqkm), as.character))
     }) %>%
-    bind_rows() %>% 
-    st_transform(crs = crs)
+    bind_rows() 
   
   return(flowlines)
   
