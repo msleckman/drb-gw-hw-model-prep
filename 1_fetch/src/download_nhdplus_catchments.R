@@ -25,8 +25,7 @@ get_nhdplusv2_catchments <- function(comid, crs = 4326){
                                                              realization = "catchment",
                                                              t_srs = crs))
     }) %>%
-    bind_rows() %>% 
-    st_transform(crs = crs)
+    bind_rows() 
   
   # Format variable names
   catchments_out <- catchments %>%
