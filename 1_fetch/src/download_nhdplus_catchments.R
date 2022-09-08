@@ -22,7 +22,8 @@ get_nhdplusv2_catchments <- function(comid, crs = 4326){
     split(., .$download_grp) %>%
     lapply(., function(x){
       cats_sub <- suppressMessages(nhdplusTools::get_nhdplus(comid = x$COMID, 
-                                                             realization = "catchment"))
+                                                             realization = "catchment",
+                                                             t_srs = crs))
     }) %>%
     bind_rows() %>% 
     st_transform(crs = crs)

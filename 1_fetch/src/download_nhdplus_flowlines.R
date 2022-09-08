@@ -18,7 +18,8 @@ download_nhdplus_flowlines <- function(comid, crs = 4326){
     split(., .$download_grp) %>%
     lapply(., function(x){
       flines_sub <- nhdplusTools::get_nhdplus(comid = x$COMID, 
-                                              realization = "flowline")
+                                              realization = "flowline",
+                                              t_srs = crs)
       # format certain columns to allow merging chunked flowlines into a single
       # data frame
       flines_sub_out <- flines_sub %>%
