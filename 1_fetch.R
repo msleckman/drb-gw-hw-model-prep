@@ -208,7 +208,7 @@ p1_targets_list <- list(
   tar_target(
     p1_ref_gages_sf,
     sf::st_read(p1_ref_gages_geojson, quiet = TRUE) %>%
-      st_transform(crs = crs) %>% 
+    
       mutate(COMID_refgages = as.character(nhdpv2_COMID))
   ),
   
