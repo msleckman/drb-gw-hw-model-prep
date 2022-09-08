@@ -41,27 +41,29 @@ p1_targets_list <- list(
   # values from raster data.
   tar_target(
     p1_nhd_reaches,
-    download_nhdplus_flowlines(p1_drb_comids_all_tribs$COMID)
+    download_nhdplus_flowlines(p1_drb_comids_all_tribs$COMID,
+                               crs = crs)
   ),
   
   # Use crosswalk table to fetch just the NHDv2 reaches that overlap the NHM network.
   tar_target(
     p1_nhd_reaches_along_NHM,
-    download_nhdplus_flowlines(p1_drb_comids_segs$COMID)
+    download_nhdplus_flowlines(p1_drb_comids_segs$COMID,
+                               crs = crs)
   ),
   
-  # Download all NHDPlusv2 catchments in the DRB (may take awhile to run).
+  # Download all NHDPlusv2 catchments in the DRB (may take awhile to run)
   tar_target(
     p1_nhd_catchments,
-    get_nhdplusv2_catchments(comid = p1_nhd_reaches$comid)
+    get_nhdplusv2_catchments(comid = p1_nhd_reaches$comid,
+                             crs = crs)
   ),
   
   # Dissolve NHDPlusv2 catchments to create a single catchment polygon for
   # each NHM segment (analogous to HRU).
   tar_target(
     p1_nhm_catchments_dissolved,
-    {sf_use_s2(FALSE)
-      left_join(p1_nhd_catchments %>% mutate(COMID = as.character(COMID)),
+    {left_join(p1_nhd_catchments %>% mutate(COMID = as.character(COMID)),
                 p1_drb_comids_all_tribs %>% mutate(COMID = as.character(COMID)),
                 by = 'COMID') %>%
         group_by(PRMS_segid) %>%
@@ -93,7 +95,8 @@ p1_targets_list <- list(
   # the NHM network
   tar_target(
     p1_dendritic_nhd_reaches_along_NHM,
-    download_nhdplus_flowlines(p1_drb_comids_dendritic_segs$COMID)
+    download_nhdplus_flowlines(p1_drb_comids_dendritic_segs$COMID, 
+                               crs = 4326)
   ),
   
   # Download temperature site locations from ScienceBase:
@@ -128,7 +131,7 @@ p1_targets_list <- list(
   # Read in temperature site locations
   tar_target(
     p1_drb_temp_sites_sf,
-    sf::read_sf(p1_drb_temp_sites_shp, crs = 4326)
+    sf::st_read(p1_drb_temp_sites_shp)
   ),
   
   # Download unaggregated temperature observations from ScienceBase:
@@ -205,6 +208,7 @@ p1_targets_list <- list(
   tar_target(
     p1_ref_gages_sf,
     sf::st_read(p1_ref_gages_geojson, quiet = TRUE) %>%
+    
       mutate(COMID_refgages = as.character(nhdpv2_COMID))
   ),
   
