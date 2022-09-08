@@ -50,7 +50,8 @@ p2_targets_list <- list(
   ## Data was clipped to drb before getting added to caldera.
   
   # Reach -- depth_to_bedrock data for each nhm reach buffered at 250m  
-  ## Note: In function, we transform the proj of vector to the raster (4326) to perform weighted average. Retransform to 5070 after computation at end of code chunk.  
+  ## Note: In function, we transform the proj of vector to the raster (4326) to 
+  ## perform weighted average. Retransform to 5070 after computation at end of code chunk.  
   tar_target(p2_depth_to_bedrock_reaches_along_nhm,
              raster_in_polygon_weighted_mean(raster = p1_depth_to_bedrock_tif,
                                              nhd_polygon_layer =  p2_buffered_nhd_reaches_along_nhm,
