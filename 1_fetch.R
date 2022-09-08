@@ -23,7 +23,8 @@ p1_targets_list <- list(
     p1_GFv1_NHDv2_xwalk %>%
       select(PRMS_segid, segidnat, comid_cat) %>% 
       tidyr::separate_rows(comid_cat,sep=";") %>% 
-      rename(COMID = comid_cat)
+      rename(COMID = comid_cat,
+             seg_id_nat = segidnat)
   ),
   
   # Reshape crosswalk table to return all COMIDs that overlap each NHM segment.
@@ -32,7 +33,8 @@ p1_targets_list <- list(
     p1_GFv1_NHDv2_xwalk %>%
       select(PRMS_segid, segidnat, comid_seg) %>% 
       tidyr::separate_rows(comid_seg,sep=";") %>% 
-      rename(COMID = comid_seg)
+      rename(COMID = comid_seg,
+             seg_id_nat = segidnat)
   ),
   
   # Use crosswalk table to fetch all NHDv2 reaches in the DRB. These COMIDs 
@@ -88,7 +90,8 @@ p1_targets_list <- list(
     p1_GFv1_NHDv2_xwalk_dendritic %>%
       select(PRMS_segid, segidnat, comid_seg) %>% 
       tidyr::separate_rows(comid_seg,sep=";") %>% 
-      rename(COMID = comid_seg)
+      rename(COMID = comid_seg,
+             seg_id_nat = segidnat)
   ),
   
   # Use crosswalk table to fetch just the dendritic NHDv2 reaches that overlap
