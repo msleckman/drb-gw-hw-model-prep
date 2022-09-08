@@ -32,12 +32,10 @@ get_nhdplusv2_catchments <- function(comid, crs = 4326){
     rename_with(., toupper, id:shape_area) %>%
     rename(COMID = FEATUREID)
   
-  
   # Inform user how many catchments were returned
   message(sprintf("Returning %s catchments of %s total COMID's requested",
                   format(length(catchments_out$ID), big.mark=","), 
                   format(length(comid), big.mark=",")))
-  
   
   return(catchments_out)
   

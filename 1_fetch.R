@@ -65,12 +65,11 @@ p1_targets_list <- list(
   # each NHM segment (analogous to HRU).
   tar_target(
     p1_nhm_catchments_dissolved,
-    {left_join(p1_nhd_catchments %>% mutate(COMID = as.character(COMID)),
-                p1_drb_comids_all_tribs %>% mutate(COMID = as.character(COMID)),
-                by = 'COMID') %>%
-        group_by(PRMS_segid) %>%
-        dplyr::summarize(geometry = sf::st_union(geometry))
-    }
+    left_join(p1_nhd_catchments %>% mutate(COMID = as.character(COMID)),
+              p1_drb_comids_all_tribs %>% mutate(COMID = as.character(COMID)),
+              by = 'COMID') %>%
+      group_by(PRMS_segid) %>%
+      dplyr::summarize(geometry = sf::st_union(geometry))
   ),
   
   # Crosswalk #2: Read in the NHM - NHDv2 crosswalk file that corresponds to 
@@ -211,7 +210,6 @@ p1_targets_list <- list(
   tar_target(
     p1_ref_gages_sf,
     sf::st_read(p1_ref_gages_geojson, quiet = TRUE) %>%
-    
       mutate(COMID_refgages = as.character(nhdpv2_COMID))
   ),
   
