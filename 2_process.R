@@ -56,8 +56,7 @@ p2_targets_list <- list(
              raster_in_polygon_weighted_mean(raster = p1_depth_to_bedrock_tif,
                                              nhd_polygon_layer =  p2_buffered_nhd_reaches_along_nhm,
                                              feature_id = 'PRMS_segid', 
-                                             weighted_mean_col_name = 'dtb_weighted_mean') %>% 
-               st_transform(crs = crs)
+                                             weighted_mean_col_name = 'dtb_weighted_mean')
   ),
   
   # Catchment -- depth_to_bedrock data for each nhm upstream catchment 
@@ -67,7 +66,6 @@ p2_targets_list <- list(
                                              nhd_polygon_layer =  p1_nhm_catchments_dissolved,
                                              feature_id = 'PRMS_segid',
                                              weighted_mean_col_name  = 'dtb_weighted_mean') %>% 
-               st_transform(crs = crs) %>% 
                ## tacking on 287_1 dtb value for reach because it 287_1 doesn't have a catchment 
                rbind(.,
                      p2_depth_to_bedrock_reaches_along_nhm[p2_depth_to_bedrock_reaches_along_nhm$PRMS_segid == '287_1',]) 
