@@ -35,7 +35,8 @@ estimate_mean_width <- function(nhd_lines, buffer_dist_m = 500, estimation_metho
     message("Downloading width data from NWIS...")
     
     # return a list of nwis sites within the bounding box of nhd_lines
-    nwis_sites <- dataRetrieval::whatNWISsites(bBox = sf::st_bbox(nhd_lines),
+    bbox <- sf::st_bbox(nhd_lines)
+    nwis_sites <- dataRetrieval::whatNWISsites(bBox = bbox,
                                                parameterCd = "00060")
     
     # Format nwis sites and retain those that are stream sites

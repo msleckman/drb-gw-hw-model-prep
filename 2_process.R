@@ -50,6 +50,8 @@ p2_targets_list <- list(
   ## Data was clipped to drb before getting added to caldera.
   
   # Reach -- depth_to_bedrock data for each nhm reach buffered at 250m  
+  ## Note: In function, we transform the proj of vector to the raster (4326) to 
+  ## perform weighted average. Retransform to 5070 after computation at end of code chunk.  
   tar_target(p2_depth_to_bedrock_reaches_along_nhm,
              raster_in_polygon_weighted_mean(raster = p1_depth_to_bedrock_tif,
                                              nhd_polygon_layer =  p2_buffered_nhd_reaches_along_nhm,
@@ -58,26 +60,39 @@ p2_targets_list <- list(
   ),
   
   # Catchment -- depth_to_bedrock data for each nhm upstream catchment 
+  ## Note: In function, we transform the proj of vector to the raster (4326) to perform weighted average. Retransform to 5070 after computation at end of code chunk.  
   tar_target(p2_depth_to_bedrock_catchments_along_nhm_dissolved,
              raster_in_polygon_weighted_mean(raster = p1_depth_to_bedrock_tif,
                                              nhd_polygon_layer =  p1_nhm_catchments_dissolved,
                                              feature_id = 'PRMS_segid',
                                              weighted_mean_col_name  = 'dtb_weighted_mean') %>% 
-               ## tacking on 287_1 dtb value for reach because it 287_1 doesn't have a catchment 
+               # append dtb value subsegid = 287_1 because this reach doesn't have an nhd catchment 
                rbind(.,
-                     p2_depth_to_bedrock_reaches_along_nhm[p2_depth_to_bedrock_reaches_along_nhm$PRMS_segid == '287_1',])
+                     p2_depth_to_bedrock_reaches_along_nhm[p2_depth_to_bedrock_reaches_along_nhm$PRMS_segid == '287_1',]) 
+               
   ),
   
   
-  # Estimate mean width for each "mainstem" NHDv2 reach 
+  # Estimate mean width for each "mainstem" NHDv2 reach. 
+  # Note that one NHM segment, segidnat 1721 (subsegid 287_1) is not included
+  # in the dendritic nhd reaches w cats data frame because the only COMID that
+  # intersects the segment (COMID 4188275) does not have an NHD catchment area. 
+  # So in addition to estimating width for the COMIDs represented in 
+  # p2_dendritic_nhd_reaches_along_NHM_w_cats, we also want to estimate width 
+  # for COMID 4188275.
   tar_target(
     p2_nhd_mainstem_reaches_w_width,
-    estimate_mean_width(p2_dendritic_nhd_reaches_along_NHM_w_cats, 
-                        estimation_method = 'nwis',
-                        network_pos_variable = 'arbolate_sum',
-                        ref_gages = p1_ref_gages_sf)
+    {
+      nhd_lines <- bind_rows(p2_dendritic_nhd_reaches_along_NHM_w_cats,
+                             filter(p1_dendritic_nhd_reaches_along_NHM,
+                                    comid == "4188275"))
+      estimate_mean_width(nhd_lines, 
+                          estimation_method = 'nwis',
+                          network_pos_variable = 'arbolate_sum',
+                          ref_gages = p1_ref_gages_sf)
+    }
   ),
-  
+
   # Pull static segment attributes from PRMS SNTemp model driver data
   tar_target(
     p2_static_inputs_prms,
@@ -86,16 +101,16 @@ p2_targets_list <- list(
       summarize(seg_elev = unique(seg_elev),
                 seg_slope = unique(seg_slope),
                 seg_width = mean(seg_width, na.rm = TRUE)) %>%
-      mutate(segidnat = as.character(seg_id_nat)) %>%
-      select(segidnat, seg_elev, seg_slope, seg_width)
+      mutate(seg_id_nat = as.character(seg_id_nat)) %>%
+      select(seg_id_nat, seg_elev, seg_slope, seg_width)
   ),
   
   # Pull dynamic segment attributes from PRMS SNTemp model driver data
   tar_target(
     p2_dynamic_inputs_prms,
     p1_sntemp_input_output %>%
-      mutate(segidnat = as.character(seg_id_nat)) %>%
-      select(segidnat, date, seginc_potet)
+      mutate(seg_id_nat = as.character(seg_id_nat)) %>%
+      select(seg_id_nat, date, seginc_potet)
   ),
   
   # Subset the DRB meteorological data to only include the NHDPlusv2 catchments 
@@ -108,7 +123,7 @@ p2_targets_list <- list(
     {
       reticulate::source_python("2_process/src/subset_nc_to_comid.py")
       subset_nc_to_comids(p1_drb_nhd_gridmet, 
-                          p2_nhd_mainstem_reaches_w_width$comid) %>%
+                          p2_dendritic_nhd_reaches_along_NHM_w_cats$comid) %>%
         as_tibble() %>%
         relocate(c(COMID,time), .before = "tmmx") %>%
         # format dates
@@ -145,11 +160,12 @@ p2_targets_list <- list(
   tar_target(
     p2_static_inputs_nhd_formatted,
     p2_static_inputs_nhd %>%
-      select(COMID, segidnat, subsegid, 
+      select(COMID, seg_id_nat, subsegid, 
              est_width_m, min_elev_m, slope) %>%
       rename(seg_width_empirical = est_width_m,
              seg_elev = min_elev_m,
-             seg_slope = slope)
+             seg_slope = slope,
+             seg_id_nat = seg_id_nat)
   ),
   
   # Combine NHD-scale static input drivers with dynamic climate drivers. 
@@ -177,17 +193,18 @@ p2_targets_list <- list(
   ),
   
   # Format NHM-scale attributes, including empirical width
-  # TODO: the NHM attributes table below includes 458 rows because subsegid 287_1
-  # (which corresponds with COMID 4188275) does not have a width estimate. This 
-  # segment is functionally omitted in p2_dendritic_nhd_reaches_along_NHM_w_cats
-  # because it doesn't have an NHD catchment area and therefore does not have
-  # meteorological driver data either. 
+  # seg_id_nat's 1437, 1442, and 1485 each have two subsegid's attached to one 
+  # seg_id_nat (e.g. 3_1 and 3_2 in the case of seg_id_nat 1437). Since we only
+  # consider the seg_id_nat values when running river-dl, here we assume that 
+  # the sub-segments all have the same width value, which is equal to the maximum
+  # width between the two contributing subsegid's. 
   tar_target(
     p2_static_inputs_nhm_formatted,
     p2_static_inputs_nhd_formatted %>%
-      group_by(segidnat, subsegid) %>%
+      group_by(seg_id_nat) %>%
       summarize(seg_width_empirical = max(seg_width_empirical),
-                .groups = "drop")
+                .groups = "drop") %>%
+      mutate(seg_id_nat = as.integer(seg_id_nat))
   ),
   
   # Save a feather file that contains the formatted NHM-scale attributes

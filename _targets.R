@@ -9,6 +9,10 @@ dir.create('1_fetch/out/statsgo', showWarnings = FALSE)
 source("1_fetch.R")
 source("2_process.R")
 
+# Define crs
+crs <- 5070
+
+
 # Define the url for the NHGFv1 to NHDv2 crosswalk 
 # Note that there are different versions of the crosswalk table that might be best suited
 # to different use cases (e.g. retain divergences? retain zero-area flowlines?)
