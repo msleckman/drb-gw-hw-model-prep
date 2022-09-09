@@ -248,6 +248,25 @@ p1_targets_list <- list(
     p1_depth_to_bedrock_tif,
     Shangguan_dtb_cm_250m_clip_path,
     format = "file"
+  ),
+  
+  tar_target(
+    p1_coarse_sediment_sollerEtal_drb,
+    st_read('1_fetch/in/USGS_DS_425_SHAPES/Surficial_materials.shp') %>% 
+      st_crop(surfi_mat,
+              p1_nhd_reaches_along_NHM %>%
+                st_transform(crs = st_crs(surfi_mat)) %>%
+                st_bbox()
+              )
+    ),
+  
+  tar_target(
+    p1_coarse_sediment_unitname_xwalk,
+    read_csv('1_fetch/in/surficial_materials_CONUS_unit_names.csv',
+             col_types = 'c'
+             )
+  )
+
   )
   
 )
