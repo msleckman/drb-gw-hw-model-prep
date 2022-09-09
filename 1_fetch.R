@@ -253,9 +253,9 @@ p1_targets_list <- list(
   tar_target(
     p1_coarse_sediment_sollerEtal_drb,
     st_read('1_fetch/in/USGS_DS_425_SHAPES/Surficial_materials.shp') %>% 
-      st_crop(surfi_mat,
-              p1_nhd_reaches_along_NHM %>%
-                st_transform(crs = st_crs(surfi_mat)) %>%
+      st_transform(.,
+                   crs = st_crs(p1_nhd_reaches_along_NHM)) %>% 
+      st_crop(., p1_nhd_reaches_along_NHM %>%
                 st_bbox()
               )
     ),
@@ -267,6 +267,5 @@ p1_targets_list <- list(
              )
   )
 
-  )
   
 )
