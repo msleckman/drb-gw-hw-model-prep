@@ -240,11 +240,7 @@ p2_targets_list <- list(
   # Save a feather file that contains the formatted NHM-scale attributes
   tar_target(
     p2_static_inputs_nhm_formatted_feather,
-    {
-      fileout <- "2_process/out/nhm_attributes.feather"
-      arrow::write_feather(p2_static_inputs_nhm_formatted, fileout)
-      fileout
-    },
+    write_feather(p2_static_inputs_nhm_formatted, "2_process/out/nhm_attributes.feather"),
     format = "file"
   )
   
