@@ -257,6 +257,8 @@ p1_targets_list <- list(
     format = "file"
   ),
   
+  # Dataset build in consultation with GW subject matter expert. table found in sharepoint in project data folder
+  # Dataset need to be downloaded from sharepoint location and placed into 1_fetch/in/ in order to build this target
   tar_target(
     p1_coarse_sediment_unitname_xwalk,
     read_csv('1_fetch/in/surficial_materials_CONUS_unit_names.csv',
@@ -264,6 +266,10 @@ p1_targets_list <- list(
     )
   ),
   
+  # load in Soller et al. 2009's surficial material dataset and filter using xwalk table
+  # zipped file USGS_DS_425_SHAPES.zip is found in sharepoint data folder. USGS_DS_425_SHAPES.zip must
+  # be downloaded from sharepoint location, placed into 1_fetch/in/ , and unzipped in order to build this target
+  # original data found https://pubs.usgs.gov/ds/425/
   tar_target(
     p1_coarse_sediment_sollerEtal_drb,
     st_read('1_fetch/in/USGS_DS_425_SHAPES/Surficial_materials.shp',
