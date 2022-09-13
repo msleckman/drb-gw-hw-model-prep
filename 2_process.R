@@ -3,6 +3,7 @@ source('2_process/src/raster_in_polygon_weighted_mean.R')
 source("2_process/src/estimate_mean_width.R")
 source("2_process/src/write_data.R")
 source("2_process/src/combine_nhd_input_drivers.R")
+source("2_process/src/munge_split_temp_dat.R")
 
 p2_targets_list <- list(
 
@@ -32,21 +33,25 @@ p2_targets_list <- list(
   tar_target(
     p2_drb_temp_obs_w_segs,
     p1_drb_temp_obs %>%
-      left_join(y = p2_drb_temp_sites_w_segs[,c("site_id","comid")], by = "site_id") %>%
-      rename(COMID = comid, 
-             mean_temp_c = mean_temp_degC,
-             min_temp_c = min_temp_degC,
-             max_temp_c = max_temp_degC)
+      left_join(y = p2_drb_temp_sites_w_segs[,c("site_id","comid")], by = "site_id")
   ),
   
-  # Save csv file containing temperature observations mapped to NHDPlusv2 COMIDs
+  # Resolve duplicate temperature observations and summarize the temperature data
+  # to return one value for each COMID-date. By setting prioritize_nwis_sites to
+  # FALSE we include all observations from non-NWIS sites in the summarized data.
   tar_target(
-    p2_drb_temp_obs_w_segs_csv,
-    {
-      fileout <- "2_process/out/unaggregated_temp_observations_nhdv2.csv"
-      write_csv(p2_drb_temp_obs_w_segs, fileout)
-      fileout
-    },
+    p2_drb_temp_obs_by_comid,
+    p2_drb_temp_obs_w_segs %>%
+      munge_split_temp_dat(., prioritize_nwis_sites = FALSE) %>%
+      rename(COMID = comid)
+  ),
+  
+  # Save temperature observations mapped to NHDPlusv2 COMIDs as a zarr data store
+  tar_target(
+    p2_drb_temp_obs_w_segs_zarr,
+    write_df_to_zarr(p2_drb_temp_obs_by_comid, 
+                     index_cols = c("date", "COMID"), 
+                     "2_process/out/unaggregated_temp_observations_nhdv2.zarr"),
     format = "file"
   ),
   
