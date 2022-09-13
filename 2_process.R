@@ -51,7 +51,7 @@ p2_targets_list <- list(
     p2_drb_temp_obs_w_segs_zarr,
     write_df_to_zarr(p2_drb_temp_obs_by_comid, 
                      index_cols = c("date", "COMID"), 
-                     "2_process/out/unaggregated_temp_observations_nhdv2.zarr"),
+                     "2_process/out/drb_temp_observations_nhdv2.zarr"),
     format = "file"
   ),
   
