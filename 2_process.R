@@ -30,6 +30,7 @@ p2_targets_list <- list(
   
   # Dissolve all reaches to NHM scale (joining with xwalk table to do this)
   tar_target(p2_buffered_nhd_reaches_along_nhm,
+             ## Join with xwalk table to get PRMS_segids for nhm network
              p1_nhd_reaches_along_NHM %>% 
                mutate(COMID = as.character(comid)) %>%
                left_join(.,
@@ -37,10 +38,14 @@ p2_targets_list <- list(
                            mutate(COMID = as.character(COMID)), 
                          by = 'COMID') %>%
                sf::st_make_valid() %>% 
-               # Dissolving by PRMS segid
+               ## Dissolving by PRMS segid - old nrow = 3229, new nrow = 459 
                group_by(PRMS_segid) %>%
                dplyr::summarize(geometry = sf::st_union(geometry)) %>% 
-               sf::st_buffer(., dist = units::set_units(250, m))
+               ## Buffer reach segments to 250 
+               sf::st_buffer(., dist = units::set_units(250, m)) %>% 
+               ## creating new col with area of buffer - useful for downstream targets that uses buffered reaches
+               mutate(total_reach_buffer_area_km2 = units::set_units(st_area(.), km^2)) %>% 
+               relocate(geometry, .after = last_col())
   ),
   
   # Depth to bedrock processing
@@ -81,6 +86,7 @@ p2_targets_list <- list(
   tar_target(
     p2_coarse_sediment_area_reaches_along_nhm,
     coarse_sediment_area_calc(buffered_reaches_sf = p2_buffered_nhd_reaches_along_nhm,
+                              buffered_reaches_area_col = 'total_reach_buffer_area_km2',
                               coarse_sediments_area_sf = p1_coarse_sediment_sollerEtal_drb,
                               prms_col = 'PRMS_segid')
     ),

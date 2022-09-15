@@ -1,4 +1,5 @@
 coarse_sediment_area_calc <- function(buffered_reaches_sf, 
+                                      buffered_reaches_area_col,
                                  coarse_sediments_area_sf,
                                  prms_col = 'PRMS_segid'){
   #' @description function takes the a vector polygon sf object describing areas of coarse stratified sediment surface material
@@ -26,13 +27,12 @@ coarse_sediment_area_calc <- function(buffered_reaches_sf,
                              by = prms_col) %>%
   ## creating area cols for final df with all PRMS reaches  
   mutate(cs_area_km2 = units::set_units(ifelse(is.na(cs_area_km2), 0, cs_area_km2), km^2),
-           total_reach_buffer_area_km2 = units::set_units(st_area(.), km^2),
-          ## calculating proportion of coarse stratified sediment within buffered reach 
-           cs_area_proportion = round(cs_area_km2 / total_reach_buffer_area_km2, 3)) %>%
+          ## calculating proportion of coarse stratified sediment within buffered reach using input area of reach col
+           cs_area_proportion = round(cs_area_km2 / .data[[buffered_reaches_area_col]], 3)) %>%
     ## re order cols 
-    relocate(geometry, .after = cs_area_proportion)
+    relocate(geometry, .after = last_col())
   
-  ## removing unit on proportion
+  # Removing unit on proportion
   buffered_reaches_w_cs_df$cs_area_proportion <- units::drop_units(buffered_reaches_w_cs_df$cs_area_proportion)
   
   return(buffered_reaches_w_cs_df)
