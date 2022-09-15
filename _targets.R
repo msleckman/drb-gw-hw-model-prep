@@ -24,7 +24,6 @@ GFv1_NHDv2_xwalk_dendritic_url <- paste0("https://raw.githubusercontent.com/USGS
                                          "3637931f5a17469a4234eaed3d20ed44ba45958d",
                                          "/2_process/out/GFv1_NHDv2_xwalk_dendritic.csv")
 
-
 ## nhd parent id 
 # pulled from https://www.sciencebase.gov/catalog/item/5728d6ace4b0b13d3918a992
 nhd_statsgo_parent_sbid <- '5728d6ace4b0b13d3918a992'

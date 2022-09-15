@@ -276,10 +276,7 @@ p1_targets_list <- list(
     )
   ),
   
-  # load in Soller et al. 2009's surficial material dataset and filter using xwalk table
-  # zipped file USGS_DS_425_SHAPES.zip is found in sharepoint data folder. USGS_DS_425_SHAPES.zip must
-  # be downloaded from sharepoint location, placed into 1_fetch/in/ , and unzipped in order to build this target
-  # original data found https://pubs.usgs.gov/ds/425/
+  # load in Soller et al. 2009's surficial material dataset
   tar_target(p1_soller_surficial_mat_zip,
              download_file("https://pubs.usgs.gov/ds/425/USGS_DS_425_SHAPES.zip",
                           fileout = "1_fetch/out/USGS_DS_425_SHAPES.zip", 
@@ -294,13 +291,13 @@ p1_targets_list <- list(
       file_names <- unzip(zipfile = p1_soller_surficial_mat_zip, 
                           exdir = "1_fetch/out", 
                           overwrite = TRUE)
-      ## grep-ing the exact file because there are multiple .shp files in this compressed file
+      ## grep-ing the exact file because there are multiple .shp files in this compressed downloaded folder
       grep("Surficial_materials.shp$",file_names, value = TRUE, ignore.case = TRUE)
     },
     format = "file"
   ),
   
-  # Read in soller shp file as sf object + filtering using coarse sediment dataset + clipping to drb bbox
+  # Read in soller shp file as sf object + filtering using coarse sediment xwalk dataset + clipping to drb bbox
   tar_target(
     p1_soller_coarse_sediment_drb_sf,
     st_read(p1_soller_surficial_mat_shp,

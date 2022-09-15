@@ -81,8 +81,7 @@ p2_targets_list <- list(
                
   ),
   
-  ## Percent Coarse Stratified Sediment Processing 
-  
+  ## Soller coarse stratified Sediment processing to buffered-reach scale
   tar_target(
     p2_coarse_sediment_area_reaches_along_nhm,
     coarse_sediment_area_calc(buffered_reaches_sf = p2_buffered_nhd_reaches_along_nhm,
