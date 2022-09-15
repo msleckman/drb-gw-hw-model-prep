@@ -267,8 +267,7 @@ p1_targets_list <- list(
     format = "file"
   ),
   
-  # Dataset build in consultation with GW subject matter expert. table found in sharepoint in project data folder
-  # Dataset need to be downloaded from sharepoint location and placed into 1_fetch/in/ in order to build this target
+  # Dataset build in consultation with GW subject matter expert. 
   tar_target(
     p1_soller_coarse_sediment_xwalk,
     read_csv(p1_soller_coarse_sediment_xwalk_csv,
