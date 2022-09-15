@@ -263,11 +263,12 @@ p1_targets_list <- list(
   # corresponds with coarse sediments. 
   tar_target(
     p1_soller_coarse_sediment_xwalk_csv,
-    "1_fetch/in/surficial_materials_CONUS_unit_names.csv",
+    "1_fetch/in/SollerEtAl_SurficialMat_CoarseSed_UnitNames.csv",
     format = "file"
   ),
   
   # Dataset build in consultation with GW subject matter expert. 
+  tar_target(  
     p1_soller_coarse_sediment_xwalk,
     read_csv(p1_soller_coarse_sediment_xwalk_csv,
              col_types = 'c'

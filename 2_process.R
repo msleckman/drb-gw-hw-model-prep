@@ -43,8 +43,7 @@ p2_targets_list <- list(
                group_by(PRMS_segid) %>%
                dplyr::summarize(geometry = sf::st_union(geometry)) %>% 
                ## Buffer reach segments to 250 
-               sf::st_buffer(., 
-                             dist = units::set_units(250, m)) %>% 
+               sf::st_buffer(.,dist = units::set_units(250, m)) %>% 
                ## creating new col with area of buffer - useful for downstream targets that uses buffered reaches
                mutate(total_reach_buffer_area_km2 = units::set_units(st_area(.), km^2)) %>% 
                relocate(geometry, .after = last_col())
