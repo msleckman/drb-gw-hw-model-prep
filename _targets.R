@@ -1,6 +1,6 @@
 library(targets)
 
-options(tidyverse.quiet = TRUE)
+options(tidyverse.quiet = TRUE, timeout = 300)
 tar_option_set(packages = c("raster","sbtools","sf","nhdplusTools", 'purrr', 'terra', 'tidyverse', "arrow", "tidync", "ncdf4", "reticulate")) 
 
 # dir for selected datasets soil characteristics from nhd statsgo

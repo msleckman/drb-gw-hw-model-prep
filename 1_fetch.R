@@ -257,11 +257,21 @@ p1_targets_list <- list(
     format = "file"
   ),
   
+  # Track crosswalk file created by J. Barclay that translates surficial 
+  # material categorizations from Soller et al. 2009 (https://pubs.usgs.gov/ds/425/)
+  # into a binary variable that indicates whether each classification
+  # corresponds with coarse sediments. 
+  tar_target(
+    p1_soller_coarse_sediment_xwalk_csv,
+    "1_fetch/in/surficial_materials_CONUS_unit_names.csv",
+    format = "file"
+  ),
+  
   # Dataset build in consultation with GW subject matter expert. table found in sharepoint in project data folder
   # Dataset need to be downloaded from sharepoint location and placed into 1_fetch/in/ in order to build this target
   tar_target(
-    p1_coarse_sediment_unitname_xwalk,
-    read_csv('1_fetch/in/surficial_materials_CONUS_unit_names.csv',
+    p1_soller_coarse_sediment_xwalk,
+    read_csv(p1_soller_coarse_sediment_xwalk_csv,
              col_types = 'c'
     )
   ),
@@ -270,12 +280,34 @@ p1_targets_list <- list(
   # zipped file USGS_DS_425_SHAPES.zip is found in sharepoint data folder. USGS_DS_425_SHAPES.zip must
   # be downloaded from sharepoint location, placed into 1_fetch/in/ , and unzipped in order to build this target
   # original data found https://pubs.usgs.gov/ds/425/
+  tar_target(p1_soller_surficial_mat_zip,
+             download_file("https://pubs.usgs.gov/ds/425/USGS_DS_425_SHAPES.zip",
+                          fileout = "1_fetch/out/USGS_DS_425_SHAPES.zip", 
+                          mode = "wb", quiet = TRUE),
+             format = "file"
+  ),
+  
+  # Unzip downloaded soller et al surficial material shps saved in 1_fetch/out
   tar_target(
-    p1_coarse_sediment_sollerEtal_drb,
-    st_read('1_fetch/in/USGS_DS_425_SHAPES/Surficial_materials.shp',
+    p1_soller_surficial_mat_shp,
+    {
+      file_names <- unzip(zipfile = p1_soller_surficial_mat_zip, 
+                          exdir = "1_fetch/out", 
+                          overwrite = TRUE)
+      ## grep-ing the exact file because there are multiple .shp files in this compressed file
+      grep("Surficial_materials.shp$",file_names, value = TRUE, ignore.case = TRUE)
+    },
+    format = "file"
+  ),
+  
+  # Read in soller shp file as sf object + filtering using coarse sediment dataset + clipping to drb bbox
+  tar_target(
+    p1_soller_coarse_sediment_drb_sf,
+    st_read(p1_soller_surficial_mat_shp,
             quiet = TRUE) %>% 
       st_transform(crs = crs) %>% 
-      left_join(.,p1_coarse_sediment_unitname_xwalk,
+      left_join(.,
+                p1_soller_coarse_sediment_xwalk,
                 by = c('UNIT_NAME' = 'Surficial Material Name')) %>% 
       filter(CoarseSediments == 1) %>% 
       st_crop(., p1_nhd_reaches_along_NHM %>%
