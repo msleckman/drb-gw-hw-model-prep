@@ -255,6 +255,62 @@ p1_targets_list <- list(
     p1_depth_to_bedrock_tif,
     Shangguan_dtb_cm_250m_clip_path,
     format = "file"
+  ),
+  
+  # Track crosswalk file created by J. Barclay that translates surficial 
+  # material categorizations from Soller et al. 2009 (https://pubs.usgs.gov/ds/425/)
+  # into a binary variable that indicates whether each classification
+  # corresponds with coarse sediments. 
+  tar_target(
+    p1_soller_coarse_sediment_xwalk_csv,
+    "1_fetch/in/SollerEtAl_SurficialMat_CoarseSed_UnitNames.csv",
+    format = "file"
+  ),
+  
+  # Dataset build in consultation with GW subject matter expert. 
+  tar_target(  
+    p1_soller_coarse_sediment_xwalk,
+    read_csv(p1_soller_coarse_sediment_xwalk_csv,
+             col_types = 'c'
+    )
+  ),
+  
+  # load in Soller et al. 2009's surficial material dataset
+  tar_target(p1_soller_surficial_mat_zip,
+             download_file("https://pubs.usgs.gov/ds/425/USGS_DS_425_SHAPES.zip",
+                          fileout = "1_fetch/out/USGS_DS_425_SHAPES.zip", 
+                          mode = "wb", quiet = TRUE),
+             format = "file"
+  ),
+  
+  # Unzip downloaded soller et al surficial material shps saved in 1_fetch/out
+  tar_target(
+    p1_soller_surficial_mat_shp,
+    {
+      file_names <- unzip(zipfile = p1_soller_surficial_mat_zip, 
+                          exdir = "1_fetch/out", 
+                          overwrite = TRUE)
+      ## grep-ing the exact file because there are multiple .shp files in this compressed downloaded folder
+      grep("Surficial_materials.shp$",file_names, value = TRUE, ignore.case = TRUE)
+    },
+    format = "file"
+  ),
+  
+  # Read in soller shp file as sf object + filtering using coarse sediment xwalk dataset + clipping to drb bbox
+  tar_target(
+    p1_soller_coarse_sediment_drb_sf,
+    st_read(p1_soller_surficial_mat_shp,
+            quiet = TRUE) %>% 
+      st_transform(crs = crs) %>% 
+      left_join(.,
+                p1_soller_coarse_sediment_xwalk,
+                by = c('UNIT_NAME' = 'Surficial Material Name')) %>% 
+      filter(CoarseSediments == 1) %>% 
+      st_crop(., p1_nhd_reaches_along_NHM %>%
+                st_bbox()
+      )
+
   )
+
   
 )
