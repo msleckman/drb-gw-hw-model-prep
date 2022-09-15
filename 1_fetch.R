@@ -268,7 +268,6 @@ p1_targets_list <- list(
   ),
   
   # Dataset build in consultation with GW subject matter expert. 
-  tar_target(
     p1_soller_coarse_sediment_xwalk,
     read_csv(p1_soller_coarse_sediment_xwalk_csv,
              col_types = 'c'

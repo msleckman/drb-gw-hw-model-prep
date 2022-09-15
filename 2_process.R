@@ -28,8 +28,9 @@ p2_targets_list <- list(
                        sites = p1_drb_temp_sites_sf)
   ),
   
-  # Dissolve all reaches to NHM scale (joining with xwalk table to do this)
-  tar_target(p2_buffered_nhd_reaches_along_nhm,
+  # Create buffer sf object of nhm reaches
+  # Use xwalk nhd reaches along nhm and Dissolve all reaches to NHM scale
+  tar_target(p2_buffered_nhm_reaches,
              ## Join with xwalk table to get PRMS_segids for nhm network
              p1_nhd_reaches_along_NHM %>% 
                mutate(COMID = as.character(comid)) %>%
@@ -42,7 +43,8 @@ p2_targets_list <- list(
                group_by(PRMS_segid) %>%
                dplyr::summarize(geometry = sf::st_union(geometry)) %>% 
                ## Buffer reach segments to 250 
-               sf::st_buffer(., dist = units::set_units(250, m)) %>% 
+               sf::st_buffer(., 
+                             dist = units::set_units(250, m)) %>% 
                ## creating new col with area of buffer - useful for downstream targets that uses buffered reaches
                mutate(total_reach_buffer_area_km2 = units::set_units(st_area(.), km^2)) %>% 
                relocate(geometry, .after = last_col())
@@ -62,7 +64,7 @@ p2_targets_list <- list(
   tar_target(
     p2_depth_to_bedrock_reaches_along_nhm,
     raster_in_polygon_weighted_mean(raster = p1_depth_to_bedrock_tif,
-                                    nhd_polygon_layer =  p2_buffered_nhd_reaches_along_nhm,
+                                    nhd_polygon_layer =  p2_buffered_nhm_reaches,
                                     feature_id = 'PRMS_segid', 
                                     weighted_mean_col_name = 'dtb_weighted_mean')
   ),
@@ -83,8 +85,8 @@ p2_targets_list <- list(
   
   ## Soller coarse stratified Sediment processing to buffered-reach scale
   tar_target(
-    p2_coarse_sediment_area_reaches_along_nhm,
-    coarse_sediment_area_calc(buffered_reaches_sf = p2_buffered_nhd_reaches_along_nhm,
+    p2_soller_coarse_sediment_reaches_nhm,
+    coarse_sediment_area_calc(buffered_reaches_sf = p2_buffered_nhm_reaches,
                               buffered_reaches_area_col = 'total_reach_buffer_area_km2',
                               coarse_sediments_area_sf = p1_soller_coarse_sediment_drb_sf,
                               prms_col = 'PRMS_segid')
