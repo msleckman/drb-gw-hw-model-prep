@@ -4,6 +4,7 @@ source("2_process/src/estimate_mean_width.R")
 source("2_process/src/write_data.R")
 source("2_process/src/combine_nhd_input_drivers.R")
 source("2_process/src/munge_split_temp_dat.R")
+source("2_process/src/coarse_stratified_sediment_processing.R")
 
 p2_targets_list <- list(
 
@@ -55,8 +56,10 @@ p2_targets_list <- list(
     format = "file"
   ),
   
-  # Dissolve all reaches to NHM scale (joining with xwalk table to do this)
-  tar_target(p2_buffered_nhd_reaches_along_nhm,
+  # Create buffer sf object of nhm reaches
+  # Use xwalk nhd reaches along nhm and Dissolve all reaches to NHM scale
+  tar_target(p2_buffered_nhm_reaches,
+             ## Join with xwalk table to get PRMS_segids for nhm network
              p1_nhd_reaches_along_NHM %>% 
                mutate(COMID = as.character(comid)) %>%
                left_join(.,
@@ -64,10 +67,14 @@ p2_targets_list <- list(
                            mutate(COMID = as.character(COMID)), 
                          by = 'COMID') %>%
                sf::st_make_valid() %>% 
-               # Dissolving by PRMS segid
+               ## Dissolving by PRMS segid - old nrow = 3229, new nrow = 459 
                group_by(PRMS_segid) %>%
                dplyr::summarize(geometry = sf::st_union(geometry)) %>% 
-               sf::st_buffer(., dist = units::set_units(250, m))
+               ## Buffer reach segments to 250 
+               sf::st_buffer(.,dist = units::set_units(250, m)) %>% 
+               ## creating new col with area of buffer - useful for downstream targets that uses buffered reaches
+               mutate(total_reach_buffer_area_km2 = units::set_units(st_area(.), km^2)) %>% 
+               relocate(geometry, .after = last_col())
   ),
   
   # Depth to bedrock processing
@@ -80,28 +87,36 @@ p2_targets_list <- list(
   
   # Reach -- depth_to_bedrock data for each nhm reach buffered at 250m  
   ## Note: In function, we transform the proj of vector to the raster (4326) to 
-  ## perform weighted average. 
-  tar_target(p2_depth_to_bedrock_reaches_along_nhm,
-             raster_in_polygon_weighted_mean(raster = p1_depth_to_bedrock_tif,
-                                             nhd_polygon_layer =  p2_buffered_nhd_reaches_along_nhm,
-                                             feature_id = 'PRMS_segid', 
-                                             weighted_mean_col_name = 'dtb_weighted_mean')
+  ## perform weighted average. Retransform to 5070 after computation at end of code chunk.  
+  tar_target(
+    p2_depth_to_bedrock_reaches_along_nhm,
+    raster_in_polygon_weighted_mean(raster = p1_depth_to_bedrock_tif,
+                                    nhd_polygon_layer =  p2_buffered_nhm_reaches,
+                                    feature_id = 'PRMS_segid', 
+                                    weighted_mean_col_name = 'dtb_weighted_mean')
   ),
   
   # Catchment -- depth_to_bedrock data for each nhm upstream catchment 
-  ## Note: In function, we transform the proj of vector to the raster (4326) to
-  ## perform weighted average.  
-  tar_target(p2_depth_to_bedrock_catchments_along_nhm_dissolved,
-             raster_in_polygon_weighted_mean(raster = p1_depth_to_bedrock_tif,
-                                             nhd_polygon_layer =  p1_nhm_catchments_dissolved,
-                                             feature_id = 'PRMS_segid',
-                                             weighted_mean_col_name  = 'dtb_weighted_mean') %>% 
-               # append dtb value subsegid = 287_1 because this reach doesn't have an nhd catchment 
-               rbind(.,
-                     p2_depth_to_bedrock_reaches_along_nhm[p2_depth_to_bedrock_reaches_along_nhm$PRMS_segid == '287_1',]) 
-               
+  ## Note: In function, we transform the proj of vector to the raster (4326) to perform weighted average. Retransform to 5070 after computation at end of code chunk.  
+  tar_target(
+    p2_depth_to_bedrock_catchments_along_nhm_dissolved,
+    raster_in_polygon_weighted_mean(raster = p1_depth_to_bedrock_tif,
+                                    nhd_polygon_layer =  p1_nhm_catchments_dissolved,
+                                    feature_id = 'PRMS_segid',
+                                    weighted_mean_col_name  = 'dtb_weighted_mean') %>% 
+      # append dtb value subsegid = 287_1 because this reach doesn't have an nhd catchment
+      rbind(.,
+            p2_depth_to_bedrock_reaches_along_nhm[p2_depth_to_bedrock_reaches_along_nhm$PRMS_segid == '287_1',]) 
   ),
   
+  ## Soller coarse stratified Sediment processing to buffered-reach scale
+  tar_target(
+    p2_soller_coarse_sediment_reaches_nhm,
+    coarse_sediment_area_calc(buffered_reaches_sf = p2_buffered_nhm_reaches,
+                              buffered_reaches_area_col = 'total_reach_buffer_area_km2',
+                              coarse_sediments_area_sf = p1_soller_coarse_sediment_drb_sf,
+                              prms_col = 'PRMS_segid')
+    ),
   
   # Estimate mean width for each "mainstem" NHDv2 reach. 
   # Note that one NHM segment, segidnat 1721 (subsegid 287_1) is not included
