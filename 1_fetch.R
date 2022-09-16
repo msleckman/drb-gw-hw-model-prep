@@ -253,42 +253,7 @@ p1_targets_list <- list(
     pattern = map(p1_sb_attributes),
     format = "file"
   ),
-  
-  # STATSGO SOIL Characteristics
-  # get selected child items nhdv2 STATSGO Soil Characteristics,
-  # including 1) texture and 2) layer attributes.
-  tar_target(
-    p1_selected_statsgo_sbid_children,
-    sbtools::item_list_children(sb_id = nhd_statsgo_parent_sbid) %>% 
-      Filter(function(x){str_detect(x[['title']],'Text|Layer')},
-             .)
-  ),
-  
-  # Download selected CONUS STATSGO datasets from Science base
-  tar_target(
-    p1_download_statsgo_text_layer_zip,
-    lapply(p1_selected_statsgo_sbid_children,
-           function(x){download_sb_file(sb_id = x$id,
-                                        out_dir = '1_fetch/out/statsgo',
-                                        file_name = NULL,
-                                        overwrite_file = TRUE)}
-           ) %>%
-      unlist(),
-    format = 'file'
-  ),
 
-  # Combine statsgo TEXT and Layer Attributes for CAT and TOT and filter to drb
-  tar_target(
-    p1_statsgo_soil_df,
-    sb_read_filter_by_comids(data_path = '1_fetch/out/statsgo',
-                             comid = p1_drb_comids_all_tribs$COMID,
-                             sb_comid_col = 'COMID',
-                             selected_cols_contains = c("KFACT","KFACT_UP","NO10AVE",
-                                                        "NO4AVE","SILTAVE","CLAYAVE",
-                                                        "SANDAVE",'WTDEP'),
-                             cbind = TRUE)
-  ),
-  
   # Track depth to bedrock raster dataset in 1_fetch/in
   tar_target(
     p1_depth_to_bedrock_tif,
