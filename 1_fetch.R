@@ -216,6 +216,28 @@ p1_targets_list <- list(
       mutate(COMID_refgages = as.character(nhdpv2_COMID))
   ),
   
+  # Read in csv file containing the NHDPlusv2 segment/catchment attributes that 
+  # we want to download from ScienceBase:
+  tar_target(
+    p1_sb_attributes_csv,
+    '1_fetch/in/nhdv2_attributes_from_sciencebase.csv',
+    format = 'file'
+  ),
+  
+  # Read in and format segment/catchment attribute datasets from ScienceBase 
+  # note: use tar_group to define row groups based on ScienceBase ID; 
+  # row groups facilitate branching over subsets of the sb_attributes 
+  # table in downstream targets
+  tar_target(
+    p1_sb_attributes,
+    read_csv(p1_sb_attributes_csv, show_col_types = FALSE) %>%
+      # parse sb_id from https link 
+      mutate(sb_id = str_extract(SB_link,"[^/]*$")) %>%
+      group_by(sb_id) %>%
+      tar_group(),
+    iteration = "group"
+  ),
+  
   # STATSGO SOIL Characteristics
   # get selected child items nhdv2 STATSGO Soil Characteristics,
   # including 1) texture and 2) layer attributes.

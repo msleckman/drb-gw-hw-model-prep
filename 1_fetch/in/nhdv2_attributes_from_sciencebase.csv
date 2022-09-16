@@ -1,0 +1,3 @@
+SB_dataset_name,attribute_name,attribute_description,attribute_units,SB_link
+BASIN_CHAR,STRM_DENS,Flowline catchment stream density calculated as stream length (kilometers) divided by catchment(s) area (square kilometers).,meters per square kilometer,https://www.sciencebase.gov/catalog/item/57976a0ce4b021cadec97890
+BASIN_CHAR,sinuosity, Reach length (in meters) divided by its straight line length (in meters). Straight line length is measured from the beginning node of a reach to the end node of the reach.,meters per meter,https://www.sciencebase.gov/catalog/item/57976a0ce4b021cadec97890
