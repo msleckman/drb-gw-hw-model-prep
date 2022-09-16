@@ -3,8 +3,8 @@ source('2_process/src/raster_in_polygon_weighted_mean.R')
 source("2_process/src/estimate_mean_width.R")
 source("2_process/src/write_data.R")
 source("2_process/src/combine_nhd_input_drivers.R")
+source("2_process/src/munge_split_temp_dat.R")
 source("2_process/src/coarse_stratified_sediment_processing.R")
-
 
 p2_targets_list <- list(
 
@@ -26,6 +26,34 @@ p2_targets_list <- list(
     p2_drb_temp_sites_w_segs,
     subset_closest_nhd(nhd_lines = p2_dendritic_nhd_reaches_along_NHM_w_cats,
                        sites = p1_drb_temp_sites_sf)
+  ),
+  
+  # Match temperature observational time series to "mainstem" NHDPlusv2 flowline
+  # reaches by COMID. Rename columns to match the column names used in the aggregated
+  # temps data file in the temperature forecasting data release. 
+  tar_target(
+    p2_drb_temp_obs_w_segs,
+    p1_drb_temp_obs %>%
+      left_join(y = p2_drb_temp_sites_w_segs[,c("site_id","comid")], by = "site_id")
+  ),
+  
+  # Resolve duplicate temperature observations and summarize the temperature data
+  # to return one value for each COMID-date. By setting prioritize_nwis_sites to
+  # FALSE we include all observations from non-NWIS sites in the summarized data.
+  tar_target(
+    p2_drb_temp_obs_by_comid,
+    p2_drb_temp_obs_w_segs %>%
+      munge_split_temp_dat(., prioritize_nwis_sites = FALSE) %>%
+      rename(COMID = comid)
+  ),
+  
+  # Save temperature observations mapped to NHDPlusv2 COMIDs as a zarr data store
+  tar_target(
+    p2_drb_temp_obs_w_segs_zarr,
+    write_df_to_zarr(p2_drb_temp_obs_by_comid, 
+                     index_cols = c("date", "COMID"), 
+                     "2_process/out/drb_temp_observations_nhdv2.zarr"),
+    format = "file"
   ),
   
   # Create buffer sf object of nhm reaches
@@ -79,7 +107,6 @@ p2_targets_list <- list(
       # append dtb value subsegid = 287_1 because this reach doesn't have an nhd catchment
       rbind(.,
             p2_depth_to_bedrock_reaches_along_nhm[p2_depth_to_bedrock_reaches_along_nhm$PRMS_segid == '287_1',]) 
-               
   ),
   
   ## Soller coarse stratified Sediment processing to buffered-reach scale
@@ -228,11 +255,7 @@ p2_targets_list <- list(
   # Save a feather file that contains the formatted NHM-scale attributes
   tar_target(
     p2_static_inputs_nhm_formatted_feather,
-    {
-      fileout <- "2_process/out/nhm_attributes.feather"
-      arrow::write_feather(p2_static_inputs_nhm_formatted, fileout)
-      fileout
-    },
+    write_feather(p2_static_inputs_nhm_formatted, "2_process/out/nhm_attributes.feather"),
     format = "file"
   )
   
