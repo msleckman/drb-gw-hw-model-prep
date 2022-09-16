@@ -1,6 +1,7 @@
 source("1_fetch/src/download_nhdplus_flowlines.R")
 source('1_fetch/src/sb_read_filter_by_comids.R')
 source("1_fetch/src/download_nhdplus_catchments.R")
+source("1_fetch/src/fetch_nhdv2_attributes_from_sb.R")
 source("1_fetch/src/download_file.R")
 source("1_fetch/src/read_netcdf.R")
 
@@ -236,6 +237,21 @@ p1_targets_list <- list(
       group_by(sb_id) %>%
       tar_group(),
     iteration = "group"
+  ),
+  
+  # Map over desired attribute datasets to download NHDv2 attribute data
+  # Note that a txt file within the BASIN_CHAR group returns a warning that
+  # it's skipped over. That is OK because the data is also included in a zip
+  # file on ScienceBase. The zip file is the version of the data that's being
+  # downloaded and saved here.
+  tar_target(
+    p1_sb_attributes_downloaded_csvs,
+    fetch_nhdv2_attributes_from_sb(vars_item = p1_sb_attributes, 
+                                   save_dir = "1_fetch/out/nhdv2_attr", 
+                                   comids = p1_nhd_reaches$comid, 
+                                   delete_local_copies = TRUE),
+    pattern = map(p1_sb_attributes),
+    format = "file"
   ),
   
   # STATSGO SOIL Characteristics
