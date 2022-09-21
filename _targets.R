@@ -4,7 +4,7 @@ options(tidyverse.quiet = TRUE, timeout = 300)
 tar_option_set(packages = c("raster","sbtools","sf","nhdplusTools", 'purrr', 'terra', 'tidyverse', "arrow", "tidync", "ncdf4", "reticulate")) 
 
 # dir for selected datasets soil characteristics from nhd statsgo
-dir.create('1_fetch/out/statsgo', showWarnings = FALSE)
+dir.create("1_fetch/out/nhdv2_attr", showWarnings = FALSE)
 
 source("1_fetch.R")
 source("2_process.R")
