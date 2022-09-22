@@ -5,6 +5,7 @@ source("2_process/src/write_data.R")
 source("2_process/src/combine_nhd_input_drivers.R")
 source("2_process/src/munge_split_temp_dat.R")
 source("2_process/src/coarse_stratified_sediment_processing.R")
+source("2_process/src/process_nhdv2_attr.R")
 
 p2_targets_list <- list(
 
@@ -117,6 +118,21 @@ p2_targets_list <- list(
                               coarse_sediments_area_sf = p1_soller_coarse_sediment_drb_sf,
                               prms_col = 'PRMS_segid')
     ),
+  
+  # Process Wieczorek NHDPlusv2 attributes referenced to cumulative upstream
+  # area; returns object target of class "list". Note that list elements for 
+  # CAT_PPT and ACC_PPT (if "TOT" is selected below) will only contain the 
+  # PRMS_segid column and so will functionally be omitted when  
+  # creating the `p2_nhdv2_attr` target below. We are using the "TOT" columns
+  # to represent the cumulative upstream attribute values rather than "ACC".
+  tar_target(
+    p2_nhdv2_attr_upstream,
+    process_cumulative_nhdv2_attr(file_path = p1_sb_attributes_downloaded_csvs,
+                                  segs_w_comids = p1_drb_comids_down,
+                                  cols = c("TOT")),
+    pattern = map(p1_sb_attributes_downloaded_csvs),
+    iteration = "list"
+  ),
   
   # Estimate mean width for each "mainstem" NHDv2 reach. 
   # Note that one NHM segment, segidnat 1721 (subsegid 287_1) is not included
