@@ -17,25 +17,25 @@
 #' 
 process_cumulative_nhdv2_attr <- function(file_path,segs_w_comids,cols){
 
-
   message(file_path)
   # Read in downloaded data 
   # only specify col_type for COMID since cols will differ for each downloaded data file
   dat <- read_csv(file_path, col_types = cols(COMID = "c"), show_col_types = FALSE)
   
-  # For PPT data we want to return the long-term (1971-2000) monthly averages 
-  # instead of the monthly values for each year
+
   # LAUREN: Commenting out the two lines below that are used in inland salinity but
   # not for our groundwater data prep.
+  # For PPT data we want to return the long-term (1971-2000) monthly averages 
+  # instead of the monthly values for each year
   #if(grepl("PPT_TOT",file_path)|grepl("PPT_ACC",file_path)){
   #  message("Calculating long-term monthly average precipitation from annual data")
   #  dat <- calc_monthly_avg_ppt(dat)
   #}
   
-  # For NADP data we want to return the long-term (1984-2014) average 
-  # instead of annual values for each constituent
   # LAUREN: Commenting out the two lines below that are used in inland salinity
   # but not for our groundwater data prep.
+  # For NADP data we want to return the long-term (1984-2014) average 
+  # instead of annual values for each constituent
   #if(grepl("NADP",file_path)){
   #  message("Calculating long-term average NADP from annual data")
   #  dat <- calc_avg_NADP(dat)
