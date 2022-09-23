@@ -121,11 +121,12 @@ p2_targets_list <- list(
     ),
   
   # Process Wieczorek NHDPlusv2 attributes referenced to cumulative upstream
-  # area; returns object target of class "list". Note that list elements for 
-  # CAT_PPT and ACC_PPT (if "TOT" is selected below) will only contain the 
-  # PRMS_segid column and so will functionally be omitted when  
-  # creating the `p2_nhdv2_attr` target below. We are using the "TOT" columns
-  # to represent the cumulative upstream attribute values rather than "ACC".
+  # area; returns object target of class "list". 
+  # We are using the "TOT" columns to represent the cumulative upstream
+  # attribute values rather than "ACC".
+  # Note that list elements for CAT_PPT and ACC_PPT (if "TOT" is selected below)
+  # will only contain the PRMS_segid column and so will functionally be omitted when  
+  # creating the `p2_nhdv2_attr` target below. 
   tar_target(
     p2_nhdv2_attr_upstream,
     process_cumulative_nhdv2_attr(file_path = p1_sb_attributes_downloaded_csvs,
