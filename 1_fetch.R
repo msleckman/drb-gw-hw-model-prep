@@ -1,6 +1,7 @@
 source("1_fetch/src/download_nhdplus_flowlines.R")
 source('1_fetch/src/sb_read_filter_by_comids.R')
 source("1_fetch/src/download_nhdplus_catchments.R")
+source("1_fetch/src/fetch_nhdv2_attributes_from_sb.R")
 source("1_fetch/src/download_file.R")
 source("1_fetch/src/read_netcdf.R")
 
@@ -65,12 +66,11 @@ p1_targets_list <- list(
   # each NHM segment (analogous to HRU).
   tar_target(
     p1_nhm_catchments_dissolved,
-    {left_join(p1_nhd_catchments %>% mutate(COMID = as.character(COMID)),
-                p1_drb_comids_all_tribs %>% mutate(COMID = as.character(COMID)),
-                by = 'COMID') %>%
-        group_by(PRMS_segid) %>%
-        dplyr::summarize(geometry = sf::st_union(geometry))
-    }
+    left_join(p1_nhd_catchments %>% mutate(COMID = as.character(COMID)),
+              p1_drb_comids_all_tribs %>% mutate(COMID = as.character(COMID)),
+              by = 'COMID') %>%
+      group_by(PRMS_segid) %>%
+      dplyr::summarize(geometry = sf::st_union(geometry))
   ),
   
   # Crosswalk #2: Read in the NHM - NHDv2 crosswalk file that corresponds to 
@@ -95,7 +95,10 @@ p1_targets_list <- list(
   ),
   
   # Use crosswalk table to fetch just the dendritic NHDv2 reaches that overlap
-  # the NHM network
+  # the NHM network. For now, crs is set to 4326. Note if crs is set to a value
+  # other than 4326, an error will get thrown when the `estimate_mean_width()` 
+  # function is called in 2_process.R. For more information, see:
+  # https://github.com/USGS-R/drb-gw-hw-model-prep/pull/35#discussion_r966072518
   tar_target(
     p1_dendritic_nhd_reaches_along_NHM,
     download_nhdplus_flowlines(p1_drb_comids_dendritic_segs$COMID, 
@@ -211,45 +214,46 @@ p1_targets_list <- list(
   tar_target(
     p1_ref_gages_sf,
     sf::st_read(p1_ref_gages_geojson, quiet = TRUE) %>%
-    
       mutate(COMID_refgages = as.character(nhdpv2_COMID))
   ),
   
-  # STATSGO SOIL Characteristics
-  # get selected child items nhdv2 STATSGO Soil Characteristics,
-  # including 1) texture and 2) layer attributes.
+  # Read in csv file containing the NHDPlusv2 segment/catchment attributes that 
+  # we want to download from ScienceBase:
   tar_target(
-    p1_selected_statsgo_sbid_children,
-    sbtools::item_list_children(sb_id = nhd_statsgo_parent_sbid) %>% 
-      Filter(function(x){str_detect(x[['title']],'Text|Layer')},
-             .)
-  ),
-  
-  # Download selected CONUS STATSGO datasets from Science base
-  tar_target(
-    p1_download_statsgo_text_layer_zip,
-    lapply(p1_selected_statsgo_sbid_children,
-           function(x){download_sb_file(sb_id = x$id,
-                                        out_dir = '1_fetch/out/statsgo',
-                                        file_name = NULL,
-                                        overwrite_file = TRUE)}
-           ) %>%
-      unlist(),
+    p1_sb_attributes_csv,
+    '1_fetch/in/nhdv2_attributes_from_sciencebase.csv',
     format = 'file'
   ),
-
-  # Combine statsgo TEXT and Layer Attributes for CAT and TOT and filter to drb
+  
+  # Read in and format segment/catchment attribute datasets from ScienceBase 
+  # note: use tar_group to define row groups based on ScienceBase ID; 
+  # row groups facilitate branching over subsets of the sb_attributes 
+  # table in downstream targets
   tar_target(
-    p1_statsgo_soil_df,
-    sb_read_filter_by_comids(data_path = '1_fetch/out/statsgo',
-                             comid = p1_drb_comids_all_tribs$COMID,
-                             sb_comid_col = 'COMID',
-                             selected_cols_contains = c("KFACT","KFACT_UP","NO10AVE",
-                                                        "NO4AVE","SILTAVE","CLAYAVE",
-                                                        "SANDAVE",'WTDEP'),
-                             cbind = TRUE)
+    p1_sb_attributes,
+    read_csv(p1_sb_attributes_csv, show_col_types = FALSE) %>%
+      # parse sb_id from https link 
+      mutate(sb_id = str_extract(SB_link,"[^/]*$")) %>%
+      group_by(sb_id) %>%
+      tar_group(),
+    iteration = "group"
   ),
   
+  # Map over desired attribute datasets to download NHDv2 attribute data
+  # Note that a txt file within the BASIN_CHAR group returns a warning that
+  # it's skipped over. That is OK because the data is also included in a zip
+  # file on ScienceBase. The zip file is the version of the data that's being
+  # downloaded and saved here.
+  tar_target(
+    p1_sb_attributes_downloaded_csvs,
+    fetch_nhdv2_attributes_from_sb(vars_item = p1_sb_attributes, 
+                                   save_dir = "1_fetch/out/nhdv2_attr", 
+                                   comids = p1_nhd_reaches$comid, 
+                                   delete_local_copies = TRUE),
+    pattern = map(p1_sb_attributes),
+    format = "file"
+  ),
+
   # Track depth to bedrock raster dataset in 1_fetch/in
   tar_target(
     p1_depth_to_bedrock_tif,
