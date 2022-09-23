@@ -291,7 +291,8 @@ p1_targets_list <- list(
   ),
   
   # load in Soller et al. 2009's surficial material dataset
-  tar_target(p1_soller_surficial_mat_zip,
+  tar_target(
+    p1_soller_surficial_mat_zip,
              download_file("https://pubs.usgs.gov/ds/425/USGS_DS_425_SHAPES.zip",
                           fileout = "1_fetch/out/USGS_DS_425_SHAPES.zip", 
                           mode = "wb", quiet = TRUE),
