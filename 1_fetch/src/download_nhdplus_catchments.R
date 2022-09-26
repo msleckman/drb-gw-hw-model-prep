@@ -1,15 +1,22 @@
-## functions taken from drb-network-prep/get_nhdv2_flowlines.R 
-
+#' @title Download NHDPlusv2 catchments
+#' 
+#' @description 
+#' Function to download NHDPlusv2 catchments given a set of COMIDs.
+#' Chunk desired COMIDs into groups, where each group has no more than
+#' 50 COMID's to avoid timeout errors when downloading nhdplus subsets
+#' using helper functions from nhdplusTools.
+#' 
+#' @details 
+#' This function was pulled from drb-network-prep/get_nhdv2_flowlines.R:
+#' https://github.com/USGS-R/drb-network-prep/blob/main/1_fetch/src/get_nhdplusv2.R 
+#' 
+#' @param comid character string or vector of character strings containing
+#' the common identifier (COMID or featureid) of the desired catchment(s).
+#' @param crs specified coordinate reference system as an EPSG code. Default 
+#' is 4326 because that is the projection of the output from nhdplusv2.
+#' 
 get_nhdplusv2_catchments <- function(comid, crs = 4326){
   
-  #' @description Function to download NHDPlusv2 catchments given a set of COMIDs
-  #' @param comid character string or vector of character strings containing
-  #' the common identifier (COMID or featureid) of the desired catchment(s).
-  #' @param crs specified crs. default is 4326 because that is the projection of the output from nhdplusv2
-
-  # Chunk desired COMIDs into groups, where each group has no more than
-  # 50 COMID's to avoid timeout errors when downloading nhdplus subsets
-  # using helper functions from nhdplusTools
   comid_df <- tibble(COMID = comid) %>%
     mutate(comid_n = row_number(),
            download_grp = ((comid_n -1) %/% 50) + 1)

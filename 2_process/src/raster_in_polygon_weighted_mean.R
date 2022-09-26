@@ -1,12 +1,19 @@
+#' @title Summarize raster values using a polygon mask.
+#' 
+#' @description 
+#' This function takes a raster and vector polygon layer as inputs and 
+#' summarizes the raster values within each polygon. Aggregation is a
+#' weighted mean.
+#' 
+#' @param raster file path to raster file (.tif or .adf), raster or SpatRaster object.
+#' @param nhd_polygon_layer polygon vector object. Polylines will not be accepted. 
+#' Must buffer polylines before adding as input.
+#' @param weighted_mean_col_name col name for new summarized col name
+#' 
 raster_in_polygon_weighted_mean <- function(raster,
                                             nhd_polygon_layer,
                                             weighted_mean_col_name,
                                             feature_id = NULL){
-
-  #'@description function that takes a raster and vector polygon layer and summarizes the raster values within each polygon. Aggregation is a weighted mean. 
-  #'@param raster path to raster file (.tif or .adf), raster or SpatRaster object
-  #'@param nhd_polygon_layer polygon vector object. Polylines will not be accepted. Must buffer polylines before adding as input
-  #'@param weighted_mean_col_name col name for new summarized col name
   
   ## SPATRASTER
   if(class(raster) != 'SpatRaster'){

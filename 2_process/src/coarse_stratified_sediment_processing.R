@@ -1,16 +1,31 @@
+#' @title Calculate the proportion of buffered reach area has coarse stratified
+#' sediments.
+#' 
+#' @description 
+#' This function takes a vector polygon sf object that contains the areas of
+#' coarse stratified sediment surface material, and calculates the proportion
+#' of this area that is within the NHM reach buffer zones (250 m on either side
+#' of the segment flowline).
+#' 
+#' @param buffered_reaches_sf sf object containing the buffered river segments
+#' (buffered on either side of the segment flowline).
+#' @param buffered_reaches_area_col character string indicating the column in 
+#' `buffered_reaches_sf` that contains the total area (km2) of the buffered reach.
+#' @param coarse_sediments_area_sf sf object containing polygons representing areas
+#' of coarse stratified sediments within the Delaware River Basin. 
+#' @param prms_col character string indicating the name of the column that contains
+#' the segment identifier.
+#' 
+#' @return 
+#' The output is a sf object of the buffered reaches and three calculated columns: 
+#' total_reach_buffer_area_km2 = total area of buffered reach
+#' cs_area_km2 = area of coarse stratified sediment within given buffered reach  
+#' cs_area_proportion = proportion of coarse stratified sediment area within reach area 
+#' 
 coarse_sediment_area_calc <- function(buffered_reaches_sf, 
                                       buffered_reaches_area_col,
                                  coarse_sediments_area_sf,
                                  prms_col = 'PRMS_segid'){
-  #' @description function takes the a vector polygon sf object describing areas of coarse stratified sediment surface material
-  #' and calculates the proportion of this area within the NHM reach buffer zones (250 m).
-  #' @param buffered_reaches_sf
-  #' @param coarse_sediments_area_sf
-  #' @param prms_col
-  #' @value The output is a sf object of the buffered reaches and three calculated columns: 
-  #' total_reach_buffer_area_km2 = total area of buffered reach
-  #' cs_area_km2 = area of coarse stratified sediment within given buffered reach  
-  #' cs_area_proportion = proportion of coarse stratified sediment area within reach area 
   
   # Grab area of coarse sediment within buffer
   cs_df <- sf::st_intersection(buffered_reaches_sf,
