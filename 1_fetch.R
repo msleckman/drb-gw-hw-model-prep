@@ -1,5 +1,4 @@
 source("1_fetch/src/download_nhdplus_flowlines.R")
-source('1_fetch/src/sb_read_filter_by_comids.R')
 source("1_fetch/src/download_nhdplus_catchments.R")
 source("1_fetch/src/fetch_nhdv2_attributes_from_sb.R")
 source("1_fetch/src/download_file.R")
