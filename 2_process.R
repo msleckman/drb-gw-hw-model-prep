@@ -5,6 +5,7 @@ source("2_process/src/write_data.R")
 source("2_process/src/combine_nhd_input_drivers.R")
 source("2_process/src/munge_split_temp_dat.R")
 source("2_process/src/coarse_stratified_sediment_processing.R")
+source("2_process/src/process_nhdv2_attr.R")
 
 p2_targets_list <- list(
 
@@ -58,23 +59,24 @@ p2_targets_list <- list(
   
   # Create buffer sf object of nhm reaches
   # Use xwalk nhd reaches along nhm and Dissolve all reaches to NHM scale
-  tar_target(p2_buffered_nhm_reaches,
-             ## Join with xwalk table to get PRMS_segids for nhm network
-             p1_nhd_reaches_along_NHM %>% 
-               mutate(COMID = as.character(comid)) %>%
-               left_join(.,
-                         p1_drb_comids_all_tribs %>%
-                           mutate(COMID = as.character(COMID)), 
-                         by = 'COMID') %>%
-               sf::st_make_valid() %>% 
-               ## Dissolving by PRMS segid - old nrow = 3229, new nrow = 459 
-               group_by(PRMS_segid) %>%
-               dplyr::summarize(geometry = sf::st_union(geometry)) %>% 
-               ## Buffer reach segments to 250 
-               sf::st_buffer(.,dist = units::set_units(250, m)) %>% 
-               ## creating new col with area of buffer - useful for downstream targets that uses buffered reaches
-               mutate(total_reach_buffer_area_km2 = units::set_units(st_area(.), km^2)) %>% 
-               relocate(geometry, .after = last_col())
+  tar_target(
+    p2_buffered_nhm_reaches,
+    ## Join with xwalk table to get PRMS_segids for nhm network
+    p1_nhd_reaches_along_NHM %>% 
+      mutate(COMID = as.character(comid)) %>%
+      left_join(.,
+                p1_drb_comids_all_tribs %>%
+                  mutate(COMID = as.character(COMID)),
+                by = 'COMID') %>%
+      sf::st_make_valid() %>% 
+      ## Dissolving by PRMS segid - old nrow = 3229, new nrow = 459 
+      group_by(PRMS_segid) %>%
+      dplyr::summarize(geometry = sf::st_union(geometry)) %>% 
+      ## Buffer reach segments to 250 
+      sf::st_buffer(.,dist = units::set_units(250, m)) %>% 
+      ## creating new col with area of buffer - useful for downstream targets that uses buffered reaches
+      mutate(total_reach_buffer_area_km2 = units::set_units(st_area(.), km^2)) %>% 
+      relocate(geometry, .after = last_col())
   ),
   
   # Depth to bedrock processing
@@ -117,6 +119,24 @@ p2_targets_list <- list(
                               coarse_sediments_area_sf = p1_soller_coarse_sediment_drb_sf,
                               prms_col = 'PRMS_segid')
     ),
+  
+  # Process Wieczorek NHDPlusv2 attributes referenced to cumulative upstream
+  # area; returns object target of class "list". 
+  # We are using the "TOT" (total cumulative drainage area) columns in the 
+  # Wieczorek attribute data files to represent the cumulative upstream
+  # attribute values rather than "ACC" (divergence-routed accumulate values). 
+  # Note that if "TOT" is selected below, list elements for CAT_PPT 
+  # (catchment-scale precip) and ACC_PPT (watershed-accumulated precip) will 
+  # only contain the PRMS_segid column and so will functionally be omitted 
+  # when creating the `p2_nhdv2_attr` target below. 
+  tar_target(
+    p2_nhdv2_attr_upstream,
+    process_cumulative_nhdv2_attr(file_path = p1_sb_attributes_downloaded_csvs,
+                                  segs_w_comids = p1_drb_comids_down,
+                                  cols = c("TOT")),
+    pattern = map(p1_sb_attributes_downloaded_csvs),
+    iteration = "list"
+  ),
   
   # Estimate mean width for each "mainstem" NHDv2 reach. 
   # Note that one NHM segment, segidnat 1721 (subsegid 287_1) is not included

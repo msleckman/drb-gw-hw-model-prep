@@ -38,6 +38,17 @@ p1_targets_list <- list(
              seg_id_nat = segidnat)
   ),
   
+  # Reshape crosswalk table to return all COMIDs that represent the downstream
+  # end of each NHM segment.
+  tar_target(
+    p1_drb_comids_down,
+    p1_GFv1_NHDv2_xwalk %>%
+      select(PRMS_segid, segidnat, comid_down) %>% 
+      tidyr::separate_rows(comid_down,sep=";") %>% 
+      rename(COMID = comid_down,
+             seg_id_nat = segidnat)    
+  ),
+  
   # Use crosswalk table to fetch all NHDv2 reaches in the DRB. These COMIDs 
   # should be used for preparing feature data, including aggregating feature 
   # values from the NHD-scale to the NHM-scale and/or for deriving feature 
@@ -280,7 +291,8 @@ p1_targets_list <- list(
   ),
   
   # load in Soller et al. 2009's surficial material dataset
-  tar_target(p1_soller_surficial_mat_zip,
+  tar_target(
+    p1_soller_surficial_mat_zip,
              download_file("https://pubs.usgs.gov/ds/425/USGS_DS_425_SHAPES.zip",
                           fileout = "1_fetch/out/USGS_DS_425_SHAPES.zip", 
                           mode = "wb", quiet = TRUE),
