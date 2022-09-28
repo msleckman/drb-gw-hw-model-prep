@@ -1,4 +1,4 @@
-#' Function to save data frames as a feather file
+#' @title Save data frames as a feather file
 #' 
 #' @param data data frame object to save as a feather file
 #' @param file_out character string indicating the name of the output file,

@@ -1,4 +1,11 @@
-#' Function to download NHDPlus flowlines given a set of COMIDs
+#' @title Download NHDPlusv2 flowlines.
+#'
+#' @description
+#' Function to download NHDPlusv2 flowlines given a set of COMIDs
+#' 
+#' @details 
+#' This function was pulled from drb-network-prep/get_nhdv2_flowlines.R:
+#' https://github.com/USGS-R/drb-network-prep/blob/main/1_fetch/src/get_nhdplusv2.R 
 #' 
 #' @param comid character string or vector of character strings containing
 #' the common identifier (COMID) of the desired flowline(s)
