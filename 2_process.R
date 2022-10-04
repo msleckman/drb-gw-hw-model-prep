@@ -139,7 +139,7 @@ p2_targets_list <- list(
   ),
   
   # Process Wieczorek NHDPlusv2 attributes scaled to the catchment that directly
-  # drains to each NHM segment; returns object target of class "list" that is 
+  # drains into each NHM segment; returns object target of class "list" that is 
   # nested and contains the aggregated data as well as a separate NA diagnostics
   # data table for each NHDv2 attribute.
   tar_target(
