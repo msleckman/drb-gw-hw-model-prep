@@ -138,6 +138,20 @@ p2_targets_list <- list(
     iteration = "list"
   ),
   
+  # Process Wieczorek NHDPlusv2 attributes scaled to the catchment that directly
+  # drains into each NHM segment; returns object target of class "list" that is 
+  # nested and contains the aggregated data as well as a separate NA diagnostics
+  # data table for each NHDv2 attribute.
+  tar_target(
+    p2_nhdv2_attr_catchment,
+    process_catchment_nhdv2_attr(file_path = p1_sb_attributes_downloaded_csvs,
+                                 vars_table = p1_sb_attributes,
+                                 segs_w_comids = p1_drb_comids_all_tribs,
+                                 nhd_lines = p1_nhd_reaches),
+    pattern = map(p1_sb_attributes_downloaded_csvs),
+    iteration = "list"
+  ),
+  
   # Estimate mean width for each "mainstem" NHDv2 reach. 
   # Note that one NHM segment, segidnat 1721 (subsegid 287_1) is not included
   # in the dendritic nhd reaches w cats data frame because the only COMID that
