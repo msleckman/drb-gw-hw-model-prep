@@ -290,3 +290,46 @@ process_catchment_nhdv2_attr <- function(file_path, vars_table, segs_w_comids, n
   
 }
 
+
+
+#' @title Combine re-aggregated NHDPlusv2 attributes to a single data frame
+#' 
+#' @description 
+#' Function to combine two lists containing cumulative upstream and catchment-scale
+#' NHDv2 attributes that have been re-processed to the NHM scale. 
+#' 
+#' @details This function was pulled and modified from the inland salinity ml project:
+#' https://github.com/USGS-R/drb-inland-salinity-ml/blob/main/2_process/src/process_nhdv2_attr.R
+#' 
+#' @param attr_data_upstream list object containing NHDv2 attributes referenced to 
+#' the cumulative upstream watershed
+#' @param attr_data_catchment list object containing NHDv2 attributes scaled to 
+#' the local contributing catchment; attr_data_catchment should be a nested list
+#' such that the first element represents a unique attribute dataset and the second
+#' element represents data frames containing the aggregated datasets and the NA 
+#' diagnostics for the attribute dataset. 
+#' 
+#' @value 
+#' returns a data frame with one row per NHM segment and one column for 
+#' each unique NHDv2 attribute variable.
+#'
+create_nhdv2_attr_table <- function(attr_data_upstream,attr_data_catchment){
+
+  # For the attribute variables scaled to the PRMS catchment-scale, select 
+  # the list elements containing the data and omit the list elements 
+  # containing the NA diagnostics information. 
+  attr_data_catchment_dat <- lapply(attr_data_catchment, "[[", 1)
+  
+  # loop through both lists simultaneously and join data frames by PRMS_segid
+  attr_data_df <- purrr::map2(attr_data_catchment_dat, attr_data_upstream, 
+                              full_join, by = "PRMS_segid") %>%
+    # bind all columns containing NHDv2 attributes into a single data frame
+    Reduce(full_join,.) %>%
+    # hide messages that data frames are being joined by column 'PRMS_segid'
+    suppressMessages()
+  
+  return(attr_data_df)
+  
+}
+
+
