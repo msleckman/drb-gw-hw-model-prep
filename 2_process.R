@@ -152,6 +152,13 @@ p2_targets_list <- list(
     iteration = "list"
   ),
   
+  # Create combined NHDv2 attribute data frame that includes both the cumulative 
+  # upstream and catchment-scale values that have been aggregated to the NHM scale.
+  tar_target(
+    p2_nhdv2_attr,
+    create_nhdv2_attr_table(p2_nhdv2_attr_upstream, p2_nhdv2_attr_catchment)
+  ),
+  
   # Estimate mean width for each "mainstem" NHDv2 reach. 
   # Note that one NHM segment, segidnat 1721 (subsegid 287_1) is not included
   # in the dendritic nhd reaches w cats data frame because the only COMID that
