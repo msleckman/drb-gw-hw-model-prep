@@ -200,12 +200,11 @@ p1_targets_list <- list(
     read_netcdf(p1_sntemp_input_output_nc)
   ),
   
-  # Read in meteorological data aggregated to NHDPlusV2 catchments for the 
-  # DRB (prepped in https://github.com/USGS-R/drb_gridmet_tools). Note that
-  # the DRB met data file must be stored in 1_fetch/in. 
-  # If working outside of tallgrass/caldera, this file will need to
-  # be downloaded from the PGDL-DO project's S3 bucket and manually placed in 1_fetch/in.
-  # SCP from caldera to local 1_fetch/in/ (in caldera impd pump path :  ./drb-do/drb-do-ml-lkoenig/drb-do-ml/1_fetch/in) 
+  # Read in meteorological data aggregated to NHDPlusV2 catchments for the DRB
+  # (prepped in https://github.com/USGS-R/drb_gridmet_tools). Note that the DRB
+  # met data file must be stored in 1_fetch/in. If working outside of tallgrass/
+  # caldera, this file will need to be downloaded from the PGDL-DO project's S3
+  # bucket and manually placed in 1_fetch/in.
   tar_target(
     p1_drb_nhd_gridmet,
     "1_fetch/in/drb_climate_2022_06_14.nc",
@@ -305,13 +304,15 @@ p1_targets_list <- list(
       file_names <- unzip(zipfile = p1_soller_surficial_mat_zip, 
                           exdir = "1_fetch/out", 
                           overwrite = TRUE)
-      ## grep-ing the exact file because there are multiple .shp files in this compressed downloaded folder
+      # grep-ing the exact file because there are multiple .shp files
+      # in this compressed downloaded folder
       grep("Surficial_materials.shp$",file_names, value = TRUE, ignore.case = TRUE)
     },
     format = "file"
   ),
   
-  # Read in soller shp file as sf object + filtering using coarse sediment xwalk dataset + clipping to drb bbox
+  # Read in soller shp file as sf object + filtering using coarse sediment xwalk
+  # dataset + clipping to drb bbox
   tar_target(
     p1_soller_coarse_sediment_drb_sf,
     st_read(p1_soller_surficial_mat_shp,
@@ -324,7 +325,38 @@ p1_targets_list <- list(
       st_crop(., p1_nhd_reaches_along_NHM %>%
                 st_bbox()
       )
-
+  ),
+  
+  # Fetch McManamay and DeRolph stream classification dataset that contains 
+  # channel confinement data for each NHDPlusV2 flowline within CONUS:
+  # https://doi.org/10.6084/m9.figshare.c.4233740.v1 (accompanying paper in
+  # Scientific Data, https://doi.org/10.1038/sdata.2019.17).
+  tar_target(
+    p1_confinement_mcmanamay_zip,
+    download_file(url = "https://springernature.figshare.com/ndownloader/files/13089668",
+                  fileout = "1_fetch/out/mcmanamay2018/mcmanamay_confinement.zip",
+                  mode = "wb", quiet = TRUE),
+    format = "file"
+  ),
+  
+  # Subset McManamay and DeRolph stream classification dataset to csv file
+  # containing channel confinement categories for the Eastern U.S. region.
+  tar_target(
+    p1_confinement_mcmanamay_csv,
+    {
+      file_names <- unzip(zipfile = p1_confinement_mcmanamay_zip, 
+                          exdir = "1_fetch/out/mcmanamay2018", 
+                          overwrite = TRUE)
+      # select "East" region which includes the Delaware River Basin
+      grep("Valley_Confinement/East_VC.csv",file_names, value = TRUE, ignore.case = TRUE)
+    }, 
+    format = "file"
+  ),
+  
+  # Read in McManamay and DeRolph valley confinement data for the Eastern U.S. region.
+  tar_target(
+    p1_confinement_mcmanamay,
+    read_csv(p1_confinement_mcmanamay_csv, show_col_types = FALSE)
   )
 
   
