@@ -5,6 +5,7 @@ source("2_process/src/write_data.R")
 source("2_process/src/combine_nhd_input_drivers.R")
 source("2_process/src/munge_split_temp_dat.R")
 source("2_process/src/coarse_stratified_sediment_processing.R")
+source("2_process/src/process_channel_confinement.R")
 source("2_process/src/process_nhdv2_attr.R")
 
 p2_targets_list <- list(
@@ -119,6 +120,15 @@ p2_targets_list <- list(
                               coarse_sediments_area_sf = p1_soller_coarse_sediment_drb_sf,
                               prms_col = 'PRMS_segid')
     ),
+  
+  # Process McManamay channel confinement dataset, including reaggregating
+  # from NHDPlusv2 to NHM.
+  tar_target(
+    p2_confinement_mcmanamay,
+    aggregate_mcmanamay_confinement(confinement_data = p1_confinement_mcmanamay, 
+                                    nhd_nhm_xwalk = p1_drb_comids_segs, 
+                                    network = "nhm")
+  ),
   
   # Process Wieczorek NHDPlusv2 attributes referenced to cumulative upstream
   # area; returns object target of class "list". 
