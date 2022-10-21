@@ -6,6 +6,7 @@ tar_option_set(packages = c("raster","sbtools","sf","nhdplusTools", 'purrr', 'te
 # dir for selected input datasets
 dir.create("1_fetch/out/nhdv2_attr", showWarnings = FALSE)
 dir.create("1_fetch/out/mcmanamay2018", showWarnings = FALSE)
+dir.create("1_fetch/out/drb_facet", showWarnings = FALSE)
 
 source("1_fetch.R")
 source("2_process.R")

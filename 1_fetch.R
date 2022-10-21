@@ -327,7 +327,7 @@ p1_targets_list <- list(
       )
   ),
   
-  # Fetch McManamay and DeRolph stream classification dataset that contains 
+  # Download McManamay and DeRolph stream classification dataset that contains 
   # channel confinement data for each NHDPlusV2 flowline within CONUS:
   # https://doi.org/10.6084/m9.figshare.c.4233740.v1 (accompanying paper in
   # Scientific Data, https://doi.org/10.1038/sdata.2019.17).
@@ -357,7 +357,35 @@ p1_targets_list <- list(
   tar_target(
     p1_confinement_mcmanamay,
     read_csv(p1_confinement_mcmanamay_csv, show_col_types = FALSE)
+  ),
+  
+  # Download DRB geomorphometry dataset, collected using the FACET model 
+  # (Hopkins et al. 2020, Chesapeake and Delaware Combined Files; 
+  # https://doi.org/10.5066/P9RQJPT1).
+  tar_target(
+    p1_facet_zip,
+    download_sb_file(sb_id = "5e4d6d68e4b0ff554f6db504",
+                     file_name = "ChesapeakeDelaware_FACEToutput.zip",
+                     out_dir = "1_fetch/out/drb_facet"),
+    format = "file"
+  ),
+  
+  # Unzip DRB geomorphometry dataset and identify geomorphic metrics file.
+  tar_target(
+    p1_facet_geomorph_metrics_csv,
+    {
+      file_names <- unzip(zipfile = p1_facet_zip, 
+                          exdir = "1_fetch/out/drb_facet", 
+                          overwrite = TRUE)
+      grep("CDW_FACET_MetricsAll_Reach.csv",file_names, value = TRUE, ignore.case = TRUE)
+    }, 
+    format = "file"
+  ),
+  
+  # Read in DRB geomorphic metrics data from FACET.
+  tar_target(
+    p1_facet_geomorph_metrics,
+    read_csv(p1_facet_geomorph_metrics_csv, show_col_types = FALSE)
   )
-
   
 )
