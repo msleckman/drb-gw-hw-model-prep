@@ -47,18 +47,31 @@ aggregate_mcmanamay_confinement <- function(confinement_data, nhd_nhm_xwalk, net
               valley_bottom_length = sum(VBL),
               reach_area = sum(RWA),
               valley_bottom_area = sum(VBA)) %>%
-    ungroup() %>%
+    ungroup()
+  
+  confinement_proc <- confinement_nhm %>%
+    # Back-calculate river width and floodplain width from the values given
+    # (river width area, RWA and reach length, RL; valley bottom area, VBA and
+    # valley bottom length along stream reach, VBL). RL and VBL are in kilometers,
+    # whereas RWA and VBA are in m2. 
+    mutate(river_width_m = reach_area/(reach_length*1000),
+           floodplain_width_m = valley_bottom_area/(valley_bottom_length*1000)) %>%
     mutate(vbl_rl_ratio = valley_bottom_length/reach_length,
            vba_ra_ratio = ifelse((valley_bottom_area == 0 & reach_area == 0), 
                                  0, (valley_bottom_area/reach_area))) %>%
     # Now use McManamay categorization scheme (described in https://doi.org/10.1038/sdata.2019.17)
     # to assign confinement categories, "unconfined," "moderately confined," or "confined."
-    mutate(Confinement_calc = case_when(
+    mutate(Confinement_category_calc = case_when(
       vbl_rl_ratio > 0.50 & vba_ra_ratio > 4 ~ "Unconfined",
       vbl_rl_ratio > 0.50 & vba_ra_ratio < 4 & vba_ra_ratio > 2 ~ "Mod Confined",
       vba_ra_ratio > 4 & vbl_rl_ratio > 0.25 & vbl_rl_ratio < 0.5 ~ "Mod Confined",
       TRUE ~ "Confined"
-    ))
+    )) %>%
+    # McManamay and DeRolph only present confinement classes, but we could also calculate a 
+    # numeric value for confinement based on the information given.
+    mutate(Confinement_calc = if_else(vbl_rl_ratio == 0 & vba_ra_ratio != 0,
+                                      NA_real_,
+                                      vba_ra_ratio/vbl_rl_ratio))
   
   # Return processed confinement dataset depending on the network requested
   if(network == "nhdv2"){
