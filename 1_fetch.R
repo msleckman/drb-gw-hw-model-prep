@@ -372,20 +372,37 @@ p1_targets_list <- list(
   
   # Unzip DRB geomorphometry dataset and identify geomorphic metrics file.
   tar_target(
-    p1_facet_geomorph_metrics_csv,
-    {
-      file_names <- unzip(zipfile = p1_facet_zip, 
-                          exdir = "1_fetch/out/drb_facet", 
-                          overwrite = TRUE)
-      grep("CDW_FACET_MetricsAll_Reach.csv",file_names, value = TRUE, ignore.case = TRUE)
-    }, 
+    p1_facet_files,
+    unzip(zipfile = p1_facet_zip, 
+          exdir = "1_fetch/out/drb_facet", 
+          overwrite = TRUE),
     format = "file"
   ),
   
-  # Read in DRB geomorphic metrics data from FACET.
+  # Identify and read in DRB geomorphic metrics file from FACET.
   tar_target(
     p1_facet_geomorph_metrics,
-    read_csv(p1_facet_geomorph_metrics_csv, show_col_types = FALSE)
+    {
+      metrics_file <- grep("CDW_FACET_MetricsAll_Reach.csv", p1_facet_files, 
+                           value = TRUE, ignore.case = TRUE)
+      read_csv(metrics_file, show_col_types = FALSE)
+    }
+  ),
+  
+  # Read in combined DRB and Chesapeake Bay watershed (CBW) FACET stream network,
+  # transform to preferred coordinate reference system, subset to only include 
+  # the DRB, and join with geomorphic metrics table.
+  tar_target(
+    p1_facet_network,
+    {
+      network_file <- grep("CDW_FACET_Network.shp$", p1_facet_files, value = TRUE)
+      sf::st_read(network_file, quiet = TRUE) %>%
+        sf::st_transform(., crs = crs) %>%
+        mutate(HUC4 = stringr::str_sub(HUCID, 1, 4)) %>%
+        filter(HUC4 == "0204") %>%
+        select(UniqueID, HUC4, geometry) %>%
+        left_join(p1_facet_geomorph_metrics, by = "UniqueID")
+    }
   )
   
 )
