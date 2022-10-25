@@ -81,3 +81,140 @@ aggregate_mcmanamay_confinement <- function(confinement_data, nhd_nhm_xwalk, net
   }
   
 }
+
+
+
+#' @title Estimate channel confinement from FACET geomorphic data
+#' 
+#' @description
+#' Function to aggregate geomorphic data derived from 3-m LiDAR from the
+#' DRB FACET dataset to estimate channel confinement for individual 
+#' NHDPlusv2 or NHM segments.
+#' 
+#' @details 
+#' See FACET metadata for further details about the geomorphic dataset
+#' obtained from the FACET model and the geomorphic metric columns used
+#' for `facet_width_col` and `facet_floodplain_width_col` here.
+#' https://doi.org/10.5066/P9RQJPT1.
+#' 
+#' @param facet_network sf linestring object containing the FACET stream network.
+#' Must contain columns "Magnitude" and "USContArea" in addition to the columns 
+#' defined in `facet_width_col` and `facet_floodplain_width_col`.
+#' @param facet_width_col character string indicating which column from the FACET
+#' dataset should be used to represent channel width. Defaults to "CW955mean_1D", 
+#' channel width, mean, for values <95th and >5th percentile (within the reach). 
+#' @param facet_floodplain_width_col character string indicating which column from
+#' the FACET dataset should be used to represent floodplain width. Defaults to
+#' "FWmean_1D_FP", total floodplain width (fpwid_1d), mean. 
+#' @param nhd_catchment_polygons sf polygon object containing the NHDPlusv2
+#' catchments. Must contain column "COMID".
+#' @param nhd_nhm_xwalk data frame that specifies how NHDPlusv2 COMIDs map
+#' onto NHM segment identifiers. Must contain columns "COMID", "PRMS_segid",
+#' and "seg_id_nat".
+#' @param network character string indicating the requested resolution of the
+#' channel confinement values. Options include "nhdv2" or "nhm".
+#' @param show_warnings logical; should any warnings that arise during the 
+#' spatial join be printed to the console? Defaults to FALSE.
+#' 
+#' @returns 
+#' Returns a data frame containing estimates of channel confinement, defined
+#' as floodplain width/channel width (unitless). 
+#' 
+calculate_facet_confinement <- function(facet_network, 
+                                        facet_width_col = "CW955mean_1D", 
+                                        facet_floodplain_width_col = "FWmean_1D_FP", 
+                                        nhd_catchment_polygons, 
+                                        nhd_nhm_xwalk,
+                                        network = "nhdv2",
+                                        show_warnings = FALSE){
+  
+  # Check that the value for `network` matches one of two options we expect.
+  if(!network %in% c("nhdv2","nhm")){
+    stop(paste0("The network argument accepts 'nhdv2' or 'nhm'. Please check ",
+                "that the requested network matches one of these two options."))
+  }
+  
+  # First, spatially join the FACET stream network with the NHDPlusv2 catchments. 
+  # For each NHDPlusv2 catchment, subset the FACET segment with the largest Shreve
+  # magnitude (if multiple with the same magnitude, break a tie with upstream area).
+  warnings <- list()
+  facet_nhd <- withCallingHandlers({
+    sf::st_intersection(x = facet_network, y = nhd_catchment_polygons) %>%
+      group_by(COMID) %>%
+      arrange(desc(Magnitude), desc(USContArea)) %>%
+      slice(1) %>%
+      ungroup() %>%
+      mutate(COMID = as.character(COMID))
+    
+  }, warning = function(w) {
+    if(!show_warnings) invokeRestart("muffleWarning")
+  })
+  
+  # Retain selected columns in the joined FACET dataset and subset
+  # the data to only include the requested COMIDs.
+  cols_to_keep <- c("COMID", "UniqueID", "HUC4", "Magnitude", "USContArea", 
+                    facet_width_col, facet_floodplain_width_col)
+  facet_nhd_out <- nhd_nhm_xwalk %>%
+    left_join(y = facet_nhd, by = "COMID") %>%
+    select(any_of(cols_to_keep)) %>%
+    sf::st_drop_geometry() %>%
+    rename(channel_width := {{facet_width_col}}) %>%
+    rename(floodplain_width := {{facet_floodplain_width_col}}) 
+  
+  # If network = "nhdv2", return estimated confinement values.
+  if(network == "nhdv2"){
+    facet_nhd_out <- facet_nhd_out %>%
+      mutate(confinement_calc_facet = floodplain_width/channel_width)
+    return(facet_nhd_out)
+  }
+  
+  
+  if(network == "nhm"){
+    # If network = "nhm", download requested COMIDs and subset reach
+    # length column. Then join NHD-scale metrics to NHM segment IDs.
+    nhd_lengths <- nhdplusTools::get_nhdplus(comid = unique(nhd_nhm_xwalk$COMID),
+                                             realization = "flowline") %>%
+      mutate(COMID = as.character(comid)) %>%
+      sf::st_drop_geometry() %>%
+      select(COMID, lengthkm) %>%
+      rename(lengthkm_comid = lengthkm)
+    
+    facet_nhm <- nhd_nhm_xwalk %>%
+      left_join(y = nhd_lengths, by = "COMID") %>%
+      left_join(y = facet_nhd_out, by = "COMID")
+    
+    # Calculate a length-weighted average of the FACET floodplain and channel
+    # widths, and use these length-weighed means to estimate channel confinement
+    # for each NHM segment. In addition, add a flag for any NHM segments where
+    # less than 70% of the segment is covered by a COMID with FACET values.
+    facet_nhm_out <- facet_nhm %>%
+      group_by(seg_id_nat) %>%
+      summarize(
+        lengthkm = sum(lengthkm_comid),
+        lengthkm_facet_is_na = sum(lengthkm_comid[is.na(floodplain_width)|is.na(channel_width)]),
+        prop_reach_w_facet = 1-(lengthkm_facet_is_na/lengthkm),
+        floodplain_width_length_wtd = if_else(prop_reach_w_facet > 0,
+                                              weighted.mean(x = floodplain_width, 
+                                                            w = lengthkm_comid, 
+                                                            na.rm = TRUE),
+                                              NA_real_),
+        channel_width_length_wtd = if_else(prop_reach_w_facet > 0,
+                                           weighted.mean(x = channel_width, 
+                                                         w = lengthkm_comid, 
+                                                         na.rm = TRUE),
+                                           NA_real_)) %>%
+      mutate(
+        confinement_calc_facet = floodplain_width_length_wtd/channel_width_length_wtd,
+        flag_facet = if_else(prop_reach_w_facet < 0.7, 
+                             paste0("Note that <70% of the NHM segment is ",
+                                    "covered by a COMID with FACET data."),
+                             NA_character_)
+      )
+    
+    return(facet_nhm_out)
+  }
+  
+}
+
+
+

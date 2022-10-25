@@ -130,6 +130,25 @@ p2_targets_list <- list(
                                     network = "nhm")
   ),
   
+  # Process FACET DRB geomorphometry dataset by first spatially joining the FACET
+  # stream network with the NHDPlusv2 catchments. For each NHDPlusv2 catchment,
+  # subset the FACET segment with the largest shreve magnitude (if multiple with
+  # the same magnitude, break a tie with upstream area). Select columns for mean
+  # channel width (between 5th and 95th percentiles within reach) and floodplain
+  # width as described in https://doi.org/10.1088/1748-9326/ac6e47. If aggregation
+  # to NHM segments is requested, FACET floodplain width and channel width values
+  # for each NHDPlusv2 COMID are summarized as a length-weighted mean before 
+  # calculating channel confinement.
+  tar_target(
+    p2_confinement_facet,
+    calculate_facet_confinement(p1_facet_network, 
+                                facet_width_col = "CW955mean_1D",
+                                facet_floodplain_width_col = "FWmean_1D_FP",
+                                nhd_catchment_polygons = p1_nhd_catchments,
+                                nhd_nhm_xwalk = p1_drb_comids_segs,
+                                network = "nhm")
+  ),
+  
   # Process Wieczorek NHDPlusv2 attributes referenced to cumulative upstream
   # area; returns object target of class "list". 
   # We are using the "TOT" (total cumulative drainage area) columns in the 
