@@ -122,12 +122,19 @@ p2_targets_list <- list(
     ),
   
   # Process McManamay channel confinement dataset, including reaggregating
-  # from NHDPlusv2 to NHM.
+  # from NHDPlusv2 to NHM. Use width values estimated from empirical regression
+  # equation combined with floodplain width values from McManamay and DeRolph (2018)
+  # when estimating channel confinement.
   tar_target(
     p2_confinement_mcmanamay,
     aggregate_mcmanamay_confinement(confinement_data = p1_confinement_mcmanamay, 
                                     nhd_nhm_xwalk = p1_drb_comids_segs, 
                                     force_min_width_m = 1,
+                                    preferred_width_df = p2_nhd_mainstem_reaches_w_width %>%
+                                      sf::st_drop_geometry() %>%
+                                      mutate(COMID = as.character(comid)) %>%
+                                      select(COMID, est_width_m) %>%
+                                      rename(width_m = est_width_m),
                                     network = "nhm",
                                     nhm_identifier_col = "seg_id_nat")
   ),

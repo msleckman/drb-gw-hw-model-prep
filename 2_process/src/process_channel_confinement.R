@@ -13,6 +13,11 @@
 #' width value used in channel confinement calculations should be. All width
 #' values below this minimum width will be set to this value. Optional;
 #' defaults to zero, which amounts to this setting being ignored.
+#' @param preferred_width_df Optional; data frame containing preferred width
+#' values to use when calculating channel confinement for NHDPlusv2 reaches.
+#' Must contain columns "COMID" and "width_m". Defaults to NULL, in which 
+#' case width estimates from McManamay and DeRolph (2018) will be used to
+#' estimate channel confinement. 
 #' @param network character string indicating the requested resolution of the
 #' channel confinement values. Options include "nhdv2" or "nhm". If "nhm", 
 #' the river and valley bottom lengths and areas will be aggregated to NHM
@@ -31,6 +36,7 @@
 aggregate_mcmanamay_confinement <- function(confinement_data, 
                                             nhd_nhm_xwalk, 
                                             force_min_width_m = 0,
+                                            preferred_width_df = NULL,
                                             network = "nhdv2", 
                                             nhm_identifier_col = "seg_id_nat"){
   
@@ -40,16 +46,17 @@ aggregate_mcmanamay_confinement <- function(confinement_data,
                 "that the requested network matches one of these two options."))
   }
   
-  # Subset full confinement dataset to the NHDPlusv2 COMID's of interest.
+  # 1) Subset full confinement dataset to the NHDPlusv2 COMID's of interest.
   confinement_subset <- confinement_data %>%
-    filter(COMID %in% nhd_nhm_xwalk$COMID)
-  
-  # Note that McManamay and DeRolph develop a categorization scheme 
-  # (described in https://doi.org/10.1038/sdata.2019.17) to assign
-  # confinement categories: "unconfined," "moderately confined," or "confined."
-  # Even though they only present confinement classes, we could also calculate
-  # a numeric value for confinement based on the information given.
-  confinement_nhd <- confinement_subset %>%
+    filter(COMID %in% nhd_nhm_xwalk$COMID) %>%
+    mutate(COMID = as.character(COMID))
+
+  # 2) Format the confinement dataset. Note that McManamay and DeRolph develop
+  # a categorization scheme (described in https://doi.org/10.1038/sdata.2019.17) 
+  # to assign confinement categories: "unconfined," "moderately confined," or 
+  # "confined." Even though they only present confinement classes, we can also
+  # calculate a numeric value for confinement based on the information given.
+  confinement_subset_proc <- confinement_subset %>%
     rename(reach_length_km = RL,
            valley_bottom_length = VBL,
            reach_area = RWA,
@@ -57,25 +64,45 @@ aggregate_mcmanamay_confinement <- function(confinement_data,
            vbl_rl_ratio = VBL_RL_R,
            vba_ra_ratio = VBA_RWA_R) %>%
     # Back-calculate river width and floodplain width from the values given.
-    mutate(river_width_m = reach_area/(reach_length_km*1000),
-           floodplain_width_m = if_else(valley_bottom_length == 0, 
+    mutate(river_width_m_mcmanamay = reach_area/(reach_length_km*1000),
+           floodplain_width_m_mcmanamay = if_else(valley_bottom_length == 0, 
                                         NA_real_,
                                         valley_bottom_area/(valley_bottom_length*1000))) %>%
     # Replace all values of width below the user-specified value in `force_min_width_m`.
     # If `force_min_width_m` equals zero, this step is functionally omitted. 
-    mutate(river_width_m = if_else(river_width_m < force_min_width_m, force_min_width_m, river_width_m)) %>%
-    # Note that the calculation below is equal to vba_ra_ratio/vbl_rl_ratio. If
-    # denominator is equal to zero, just assign NA for confinement.
-    mutate(confinement_calc_mcmanamay = if_else(river_width_m == 0 | floodplain_width_m == 0, 
-                                                NA_real_,
-                                                floodplain_width_m/river_width_m))
+    mutate(river_width_m_mcmanamay = if_else(river_width_m_mcmanamay < force_min_width_m, 
+                                             force_min_width_m, 
+                                             river_width_m_mcmanamay)) 
   
+  # 3) Calculate channel confinement. If the user specifies an alternative data
+  # source for river width, join those values to the subset McManamay confinement
+  # dataset and use the preferred widths to estimate channel confinement. 
+  if(!is.null(preferred_width_df)){
+    confinement_nhd <- confinement_subset_proc %>%
+      left_join(y = preferred_width_df, by = "COMID") %>%
+      # Note that the confinement calculation below is equal to vba_ra_ratio/vbl_rl_ratio. 
+      # If the denominator is equal to zero, just assign NA for channel confinement.
+      mutate(confinement_calc_mcmanamay = if_else(width_m == 0 | floodplain_width_m_mcmanamay == 0,
+                                                  NA_real_,
+                                                  floodplain_width_m_mcmanamay/width_m)) %>%
+      rename(river_width_m = width_m)
+  # Otherwise, use width values derived from McManamay variables:
+  } else {
+    confinement_nhd <- confinement_subset_proc %>%
+      mutate(confinement_calc_mcmanamay = if_else(river_width_m_mcmanamay == 0 | floodplain_width_m_mcmanamay == 0,
+                                                  NA_real_,
+                                                  floodplain_width_m_mcmanamay/river_width_m_mcmanamay)) %>%
+      rename(river_width_m = river_width_m_mcmanamay)
+  }
+
+  # 4) If requested network is "nhdv2", format columns and return confinement estimates.
   if(network == "nhdv2"){
     confinement_nhd_out <- confinement_nhd %>%
+      rename(floodplain_width_m = floodplain_width_m_mcmanamay) %>%
       select(COMID, reach_length_km, river_width_m, floodplain_width_m, confinement_calc_mcmanamay)
     return(confinement_nhd_out)
   }
-  
+  # Otherwise, if requested network is "nhm", aggregate NHDPlusv2 values to NHM segments.
   if(network == "nhm"){
     # Join subsetted confinement dataset to NHM segment identifiers and format
     # column names in preparation for aggregation step.
@@ -83,12 +110,12 @@ aggregate_mcmanamay_confinement <- function(confinement_data,
       rename(reach_length_km_comid = reach_length_km,
              confinement_calc_comid = confinement_calc_mcmanamay,
              river_width_comid = river_width_m,
-             floodplain_width_comid = floodplain_width_m) %>%
-      mutate(COMID = as.character(COMID)) %>%
+             floodplain_width_comid = floodplain_width_m_mcmanamay) %>%
       left_join(nhd_nhm_xwalk, by = "COMID")
     
     # Group data by NHM segment and calculate a length-weighted average of the
     # confinement values among individual COMIDs that make up the NHM segment.
+    # Include columns used to assess coverage and flag McManamay confinement estimates.
     confinement_nhm <- confinement_w_nhm_segs %>%
       group_by(.data[[nhm_identifier_col]]) %>%
       summarize(
