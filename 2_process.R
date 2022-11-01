@@ -127,6 +127,7 @@ p2_targets_list <- list(
     p2_confinement_mcmanamay,
     aggregate_mcmanamay_confinement(confinement_data = p1_confinement_mcmanamay, 
                                     nhd_nhm_xwalk = p1_drb_comids_segs, 
+                                    force_min_width_m = 1,
                                     network = "nhm",
                                     nhm_identifier_col = "seg_id_nat")
   ),
