@@ -15,13 +15,19 @@
 #' flowlines and the channel confinement categories will be assigned using
 #' the same criteria as described in the McManamay and DeRolph (2018) Scientific
 #' Data paper: https://doi.org/10.1038/sdata.2019.17.
+#' @param nhm_identifier_col if `network` is "nhm" identify which column in
+#' `confinement_data` contains the unique identifier to use for aggregation (e.g.
+#' "PRMS_segid" or "seg_id_nat"). Defaults to "seg_id_nat".
 #' 
 #' @returns 
 #' Returns a data frame with one row per reach/segment and columns representing
 #' the valley bottom length: river length ratio, the valley bottom area: river
 #' area ratio, and the confinement category that was assigned ("Confinement_calc").
 #' 
-aggregate_mcmanamay_confinement <- function(confinement_data, nhd_nhm_xwalk, network = "nhdv2"){
+aggregate_mcmanamay_confinement <- function(confinement_data, 
+                                            nhd_nhm_xwalk, 
+                                            network = "nhdv2", 
+                                            nhm_identifier_col = "seg_id_nat"){
   
   # Check that the value for `network` matches one of two options we expect
   if(!network %in% c("nhdv2","nhm")){
@@ -55,11 +61,11 @@ aggregate_mcmanamay_confinement <- function(confinement_data, nhd_nhm_xwalk, net
       mutate(COMID = as.character(COMID)) %>%
       left_join(nhd_nhm_xwalk, by = "COMID")
     
-    # Group data by NHM segment and sum reach length, valley bottom length, 
-    # reach area, and valley bottom area from individual COMIDs that comprise
-    # each NHM segment. 
+    # Group data by NHM segment and sum reach length (RL), valley bottom length (VBL), 
+    # reach area (RWA), and valley bottom area (VBA) from individual COMIDs that comprise
+    # each NHM segment. RL and VBL are in kilometers, whereas RWA and VBA are in m2.
     confinement_proc <- confinement_w_nhm_segs %>%
-      group_by(seg_id_nat) %>%
+      group_by(.data[[nhm_identifier_col]]) %>%
       summarize(reach_length = sum(RL),
                 valley_bottom_length = sum(VBL),
                 reach_area = sum(RWA),
@@ -67,10 +73,7 @@ aggregate_mcmanamay_confinement <- function(confinement_data, nhd_nhm_xwalk, net
       ungroup()
     
     confinement_nhm <- confinement_proc %>%
-      # Back-calculate river width and floodplain width from the values given
-      # (river width area, RWA and reach length, RL; valley bottom area, VBA and
-      # valley bottom length along stream reach, VBL). RL and VBL are in kilometers,
-      # whereas RWA and VBA are in m2. 
+      # Back-calculate river width and floodplain width from the values given.
       mutate(river_width_m = reach_area/(reach_length*1000),
              floodplain_width_m = valley_bottom_area/(valley_bottom_length*1000)) %>%
       mutate(vbl_rl_ratio = valley_bottom_length/reach_length,
@@ -110,8 +113,8 @@ aggregate_mcmanamay_confinement <- function(confinement_data, nhd_nhm_xwalk, net
 #' https://doi.org/10.5066/P9RQJPT1.
 #' 
 #' @param facet_network sf linestring object containing the FACET stream network.
-#' Must contain columns "Magnitude" and "USContArea" in addition to the columns 
-#' defined in `facet_width_col` and `facet_floodplain_width_col`.
+#' Must contain columns "UniqueID", Magnitude", and "USContArea" in addition to 
+#' the columns defined in `facet_width_col` and `facet_floodplain_width_col`.
 #' @param facet_width_col character string indicating which column from the FACET
 #' dataset should be used to represent channel width. Defaults to "CW955mean_1D", 
 #' channel width, mean, for values <95th and >5th percentile (within the reach). 
@@ -125,6 +128,9 @@ aggregate_mcmanamay_confinement <- function(confinement_data, nhd_nhm_xwalk, net
 #' and "seg_id_nat".
 #' @param network character string indicating the requested resolution of the
 #' channel confinement values. Options include "nhdv2" or "nhm".
+#' @param nhm_identifier_col if `network` is "nhm" identify which column in
+#' `confinement_data` contains the unique identifier to use for aggregation (e.g.
+#' "PRMS_segid" or "seg_id_nat"). Defaults to "seg_id_nat".
 #' @param show_warnings logical; should any warnings that arise during the 
 #' spatial join be printed to the console? Defaults to FALSE.
 #' 
@@ -138,6 +144,7 @@ calculate_facet_confinement <- function(facet_network,
                                         nhd_catchment_polygons, 
                                         nhd_nhm_xwalk,
                                         network = "nhdv2",
+                                        nhm_identifier_col = "seg_id_nat",
                                         show_warnings = FALSE){
   
   # Check that the value for `network` matches one of two options we expect.
@@ -146,10 +153,10 @@ calculate_facet_confinement <- function(facet_network,
                 "that the requested network matches one of these two options."))
   }
   
-  # First, spatially join the FACET stream network with the NHDPlusv2 catchments. 
-  # For each NHDPlusv2 catchment, subset the FACET segment with the largest Shreve
-  # magnitude (if multiple with the same magnitude, break a tie with upstream area).
-  warnings <- list()
+  # Spatially join the FACET stream network with the NHDPlusv2 catchments.
+  # Then, for each NHDPlusv2 catchment, subset the FACET segment with the 
+  # largest Shreve magnitude (if multiple segments with the same magnitude, 
+  # break a tie using the upstream area).
   facet_nhd <- withCallingHandlers({
     sf::st_intersection(x = facet_network, y = nhd_catchment_polygons) %>%
       group_by(COMID) %>%
@@ -157,11 +164,11 @@ calculate_facet_confinement <- function(facet_network,
       slice(1) %>%
       ungroup() %>%
       mutate(COMID = as.character(COMID))
-    
   }, warning = function(w) {
     if(!show_warnings) invokeRestart("muffleWarning")
   })
-  
+
+
   # Retain selected columns in the joined FACET dataset and subset
   # the data to only include the requested COMIDs.
   cols_to_keep <- c("COMID", "UniqueID", "HUC4", "Magnitude", "USContArea", 
@@ -200,7 +207,7 @@ calculate_facet_confinement <- function(facet_network,
     # for each NHM segment. In addition, add a flag for any NHM segments where
     # less than 70% of the segment is covered by a COMID with FACET values.
     facet_nhm_out <- facet_nhm %>%
-      group_by(seg_id_nat) %>%
+      group_by(.data[[nhm_identifier_col]]) %>%
       summarize(
         lengthkm = sum(lengthkm_comid),
         lengthkm_facet_is_na = sum(lengthkm_comid[is.na(floodplain_width)|is.na(channel_width)]),
@@ -227,6 +234,54 @@ calculate_facet_confinement <- function(facet_network,
   }
   
 }
+
+
+
+#' @title Get centroid of stream reaches
+#' 
+#' @description 
+#' Function to find the centroid of each linestring object representing
+#' one stream reach within the network.
+#' 
+#' @param network sf linestring object containing the stream network. Must
+#' contain column "UniqueID".
+#' @param show_warnings logical; should any warnings that arise during the 
+#' spatial join be printed to the console? Defaults to FALSE.
+#' 
+#' @returns 
+#' Returns sf point object containing one centroid point per linestring in `network`.
+#' 
+get_reach_centroids <- function(network, show_warnings = FALSE){
+  
+  message("Finding the centroid for each reach within the network. This may take awhile...")
+  
+  network_pts_at_centroids <- network %>%
+    split(., .$UniqueID) %>%
+    lapply(., function(x){
+      # 1) cast the reach to points:
+      reach_pts <- withCallingHandlers({
+        sf::st_cast(x, "POINT")
+      }, warning = function(w){
+        if(!show_warnings) invokeRestart("muffleWarning")
+      })
+      
+      # 2) Find the centroid of each reach:
+      reach_centroid <- withCallingHandlers({
+        sf::st_centroid(x)
+      }, warning = function(w){
+        if(!show_warnings) invokeRestart("muffleWarning")
+      })
+      
+      # 3) Snap reach centroid to the reach:
+      pt_at_centroid <- reach_pts[which.min(sf::st_distance(reach_centroid, reach_pts)),]
+      return(pt_at_centroid)
+    }) %>%
+    bind_rows()
+
+  return(network_pts_at_centroids)
+}
+
+
 
 
 

@@ -127,26 +127,37 @@ p2_targets_list <- list(
     p2_confinement_mcmanamay,
     aggregate_mcmanamay_confinement(confinement_data = p1_confinement_mcmanamay, 
                                     nhd_nhm_xwalk = p1_drb_comids_segs, 
-                                    network = "nhm")
+                                    network = "nhm",
+                                    nhm_identifier_col = "seg_id_nat")
   ),
   
-  # Process FACET DRB geomorphometry dataset by first spatially joining the FACET
-  # stream network with the NHDPlusv2 catchments. For each NHDPlusv2 catchment,
-  # subset the FACET segment with the largest shreve magnitude (if multiple with
-  # the same magnitude, break a tie with upstream area). Select columns for mean
-  # channel width (between 5th and 95th percentiles within reach) and floodplain
-  # width as described in https://doi.org/10.1088/1748-9326/ac6e47. If aggregation
-  # to NHM segments is requested, FACET floodplain width and channel width values
-  # for each NHDPlusv2 COMID are summarized as a length-weighted mean before 
-  # calculating channel confinement.
+  # Pull centroid of each reach within FACET stream network.
+  # [Lauren] This target took ~1.3 hours to build on my local machine. It
+  # takes a long time because the FACET stream network is so dense. We 
+  # may look for ways to optimize this function in the future.
+  tar_target(
+    p2_facet_network_centroid,
+    get_reach_centroids(p1_facet_network)
+  ),
+  
+  # Process FACET DRB geomorphometry dataset by first Spatially joining the FACET
+  # stream reaches that have their center within an NHDPlusv2 catchment. For each
+  # NHDPlusv2 catchment, subset the FACET segment with the largest shreve magnitude
+  # (if multiple with the same magnitude, break a tie with upstream area). Select 
+  # columns for mean channel width (between 5th and 95th percentiles within reach) 
+  # and floodplain width as described in https://doi.org/10.1088/1748-9326/ac6e47. 
+  # If aggregation to NHM segments is requested, FACET floodplain width and channel
+  # width values for each NHDPlusv2 COMID are summarized as a length-weighted mean 
+  # before calculating channel confinement.
   tar_target(
     p2_confinement_facet,
-    calculate_facet_confinement(p1_facet_network, 
+    calculate_facet_confinement(facet_network = p2_facet_network_centroid, 
                                 facet_width_col = "CW955mean_1D",
                                 facet_floodplain_width_col = "FWmean_1D_FP",
                                 nhd_catchment_polygons = p1_nhd_catchments,
                                 nhd_nhm_xwalk = p1_drb_comids_segs,
-                                network = "nhm")
+                                network = "nhm",
+                                nhm_identifier_col = "seg_id_nat")
   ),
   
   # Process Wieczorek NHDPlusv2 attributes referenced to cumulative upstream

@@ -397,6 +397,7 @@ p1_targets_list <- list(
     {
       network_file <- grep("CDW_FACET_Network.shp$", p1_facet_files, value = TRUE)
       sf::st_read(network_file, quiet = TRUE) %>%
+        filter(!sf::st_is_empty(.)) %>%
         sf::st_transform(., crs = crs) %>%
         mutate(HUC4 = stringr::str_sub(HUCID, 1, 4)) %>%
         filter(HUC4 == "0204") %>%
