@@ -134,6 +134,19 @@ p2_targets_list <- list(
                                     nhm_identifier_col = "seg_id_nat")
   ),
   
+  # The processed McManamay channel confinement data are missing confinement
+  # values for 17 NHM segments. The objective of this target is to impute
+  # the NA values with confinement estimates from the nearest upstream 
+  # segment with a non-NA confinement value. 
+  tar_target(
+    p2_confinement_mcmanamay_filled,
+    refine_from_neighbors(attr_df = p2_confinement_mcmanamay, 
+                          nhm_identifier_col = "seg_id_nat",
+                          attr_name = "confinement_calc_mcmanamay",
+                          reach_distances = p1_nhm_distance_matrix,
+                          neighbors = "nearest")
+  ),
+  
   # Pull centroid of each reach within FACET stream network.
   # [Lauren] This target took ~1.3 hours to build on my local machine. It
   # takes a long time because the FACET stream network is so dense. We 
@@ -161,6 +174,19 @@ p2_targets_list <- list(
                                 nhd_nhm_xwalk = p1_drb_comids_segs,
                                 network = "nhm",
                                 nhm_identifier_col = "seg_id_nat")
+  ),
+  
+  # The processed FACET channel confinement data are missing confinement
+  # values for 93 NHM segments. The objective of this target is to impute
+  # the NA values with confinement estimates from the nearest upstream 
+  # segment with a non-NA confinement value. 
+  tar_target(
+    p2_confinement_facet_filled,
+    refine_from_neighbors(attr_df = p2_confinement_facet, 
+                          nhm_identifier_col = "seg_id_nat",
+                          attr_name = "confinement_calc_facet",
+                          reach_distances = p1_nhm_distance_matrix,
+                          neighbors = "nearest")
   ),
   
   # Process Wieczorek NHDPlusv2 attributes referenced to cumulative upstream

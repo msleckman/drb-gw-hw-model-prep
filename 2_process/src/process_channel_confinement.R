@@ -324,6 +324,137 @@ get_reach_centroids <- function(network, show_warnings = FALSE){
 }
 
 
-
-
-
+#' @title Fill in NA values from upstream/downstream neighboring reaches
+#' 
+#' @description 
+#' Function to fill in a reach's attribute value with a value from its
+#' neighboring reaches (either upstream neighbor or downstream neighbor).
+#' 
+#' @details 
+#' This function was inspired by code initially developed as part of the
+#' drb-inland-salinity-ml project.
+#' https://github.com/USGS-R/drb-inland-salinity-ml/blob/main/2_process/src/process_nhdv2_attr.R#L483-L559
+#' 
+#' @param attr_df data frame containing the attribute data. 
+#' @param nhm_identifier_col character string indicating the name of the column
+#' that contains the unique segment identifier (e.g. "PRMS_segid" or "seg_id_nat").
+#' Defaults to "seg_id_nat".
+#' @param attr_name character string indicating the attribute column name.
+#' @param reach_distances data frame representing the upstream-downstream 
+#' connections among segments within the river network, with rows representing
+#' the "from" segments and columns representing the "to" segments. Positive 
+#' values indicate that the "to" segment is downstream of the "from" segment; 
+#' negative values indicate that the "to" segment is upstream of the "from" 
+#' segment.
+#' @param neighbors character string indicating whether NA values should be 
+#' imputed using "upstream" neighbors, "downstream" neighbors, or "nearest" 
+#' neighbors. Defaults to "upstream."
+#' 
+#' @returns 
+#' Returns `attr_df` with NA values filled for the `attr_name` column.
+#' 
+refine_from_neighbors <- function(attr_df, 
+                                  nhm_identifier_col = "seg_id_nat", 
+                                  attr_name, 
+                                  reach_distances,
+                                  neighbors = "upstream"){
+  
+  # Check that the value for `neighbors` matches one of three options we expect.
+  if(!neighbors %in% c("upstream","downstream","nearest")){
+    stop(paste0("The neighbors argument accepts 'upstream', 'downstream', or ",
+                "'nearest'. Please check that the requested method matches one ",
+                "of these three options."))
+  }
+  
+  # 1) Find reaches with NA values for `attr_name`.
+  ind_reach <- attr_df %>%
+    filter(is.na(.data[[attr_name]])) %>%
+    pull(.data[[nhm_identifier_col]])
+  
+  # 2) Define a function to find neighboring, non-NA segments
+  find_neighbors <- function(reach_select, attr_df, nhm_identifier_col, 
+                             attr_name, reach_distances, neighbors){
+    
+    # subset attribute data frame and format columns
+    attr_df_select <- attr_df %>%
+      select(all_of(c(nhm_identifier_col, attr_name))) %>%
+      rename(attr_value := !!attr_name)
+    
+    # format reach distance data frame and append subsetted attribute data frame
+    cols_keep <- c("from", reach_select)
+    seg_matches <- reach_distances %>%
+      select(all_of(cols_keep)) %>%
+      mutate(!!nhm_identifier_col := as.character(from)) %>%
+      rename(target_reach := !!reach_select) %>%
+      left_join(attr_df_select, by = nhm_identifier_col) %>%
+      # keep segments with an upstream-downstream connection to `reach_select`
+      filter(target_reach != "Inf")
+    
+    # subset attribute df to nearest non-NA segments, considering either upstream
+    # or downstream segments depending on the option defined in `neighbors`.
+    if(neighbors == "upstream"){
+      seg_matches_proc <- seg_matches %>%
+        # identify nearest [upstream] neighboring segments
+        filter(target_reach > 0) %>%
+        arrange(target_reach) %>%
+        # only consider neighboring segments that have a non-NA value
+        filter(!is.na(attr_value)) %>%
+        # select nearest [upstream] neighbor
+        slice(1) %>%
+        mutate(flag_gaps = sprintf("%s was filled from neighbors: %s (%s km away).", 
+                                   attr_name, .data[[nhm_identifier_col]], round(abs(target_reach)/1000,1)),
+               seg_id = reach_select) %>%
+        select(seg_id, attr_value, flag_gaps) %>%
+        rename(!!nhm_identifier_col := seg_id)
+    }
+    if(neighbors == "downstream"){
+      seg_matches_proc <- seg_matches %>%
+        # identify nearest [downstream] neighboring segments
+        filter(target_reach < 0) %>%
+        arrange(desc(target_reach)) %>%
+        # only consider neighboring segments that have a non-NA value
+        filter(!is.na(attr_value)) %>%
+        # select nearest [downstream] neighbor
+        slice(1) %>%
+        mutate(flag_gaps = sprintf("%s was filled from neighbors: %s (%s km away).", 
+                                   attr_name, .data[[nhm_identifier_col]], round(abs(target_reach)/1000,1)),
+               seg_id = reach_select) %>%
+        select(seg_id, attr_value, flag_gaps) %>%
+        rename(!!nhm_identifier_col := seg_id)
+    }
+    if(neighbors == "nearest"){
+      seg_matches_proc <- seg_matches %>%
+        # identify nearest neighboring segments
+        arrange(abs(target_reach)) %>%
+        # only consider neighboring segments that have a non-NA value
+        filter(!is.na(attr_value)) %>%
+        # select nearest [downstream] neighbor
+        slice(1) %>%
+        mutate(flag_gaps = sprintf("%s was filled from neighbors: %s (%s km away).", 
+                                   attr_name, .data[[nhm_identifier_col]], round(abs(target_reach)/1000,1)),
+               seg_id = reach_select) %>%
+        select(seg_id, attr_value, flag_gaps) %>%
+        rename(!!nhm_identifier_col := seg_id)
+      
+    }
+    return(seg_matches_proc)
+  }
+  
+  # 3) For each reach with NA values, find the nearest non-NA neighbors
+  ind_reach_replace <- ind_reach %>%
+    lapply(., find_neighbors, attr_df, nhm_identifier_col, attr_name, reach_distances, neighbors) %>%
+    bind_rows()
+  
+  # 4) Fill NA values with non-NA neighbors
+  attr_df_filled <- attr_df %>% 
+    rename(attr_value := !!attr_name) %>%
+    # join original attr_df with df containing replacement from neighbors
+    left_join(y = ind_reach_replace, by = nhm_identifier_col) %>%
+    # use coalesce function to find first value (from original attr_df or from
+    # `ind_reach_replace` that is not NA.
+    mutate(!!attr_name := coalesce(attr_value.x, attr_value.y)) %>%
+    select(c(names(attr_df)), flag_gaps)
+    
+  return(attr_df_filled)
+}
+  
