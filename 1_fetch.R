@@ -175,6 +175,22 @@ p1_targets_list <- list(
     read_csv(p1_drb_temp_obs_csv, col_types = list(seg_id_nat = "c"))
   ),
   
+  # Download DRB distance matrix from ScienceBase:
+  # https://www.sciencebase.gov/catalog/item/623e5587d34e915b67d83806
+  tar_target(
+    p1_nhm_distance_matrix_csv,
+    download_sb_file(sb_id = "623e5587d34e915b67d83806",
+                     file_name = "distance_matrix_drb.csv",
+                     out_dir = "1_fetch/out"),
+    format = "file"
+  ),
+  
+  # Read in DRB distance matrix:
+  tar_target(
+    p1_nhm_distance_matrix,
+    read_csv(p1_nhm_distance_matrix_csv, show_col_types = FALSE)
+  ),
+  
   # Download PRMS-SNTemp model driver data from ScienceBase:
   # https://www.sciencebase.gov/catalog/item/623e5587d34e915b67d83806
   tar_target(
