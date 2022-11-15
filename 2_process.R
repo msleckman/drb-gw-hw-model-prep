@@ -5,6 +5,7 @@ source("2_process/src/write_data.R")
 source("2_process/src/combine_nhd_input_drivers.R")
 source("2_process/src/munge_split_temp_dat.R")
 source("2_process/src/coarse_stratified_sediment_processing.R")
+source("2_process/src/process_channel_confinement.R")
 source("2_process/src/process_nhdv2_attr.R")
 
 p2_targets_list <- list(
@@ -119,6 +120,74 @@ p2_targets_list <- list(
                               coarse_sediments_area_sf = p1_soller_coarse_sediment_drb_sf,
                               prms_col = 'PRMS_segid')
     ),
+  
+  # Process McManamay channel confinement dataset, including reaggregating from
+  # NHDPlusv2 to NHM. Replace any width values in the McManamay and DeRolph (2018)
+  # dataset that are less than 1m with 1m (the minimum width allowed). See further
+  # discussion in https://github.com/USGS-R/drb-gw-hw-model-prep/issues/41.
+  tar_target(
+    p2_confinement_mcmanamay,
+    aggregate_mcmanamay_confinement(confinement_data = p1_confinement_mcmanamay, 
+                                    nhd_nhm_xwalk = p1_drb_comids_segs, 
+                                    force_min_width_m = 1,
+                                    network = "nhm",
+                                    nhm_identifier_col = "seg_id_nat")
+  ),
+  
+  # The processed McManamay channel confinement data are missing confinement
+  # values for 17 NHM segments. The objective of this target is to impute
+  # the NA values with confinement estimates from the nearest upstream 
+  # segment with a non-NA confinement value. 
+  tar_target(
+    p2_confinement_mcmanamay_filled,
+    refine_from_neighbors(attr_df = p2_confinement_mcmanamay, 
+                          nhm_identifier_col = "seg_id_nat",
+                          attr_name = "confinement_calc_mcmanamay",
+                          reach_distances = p1_nhm_distance_matrix,
+                          neighbors = "nearest")
+  ),
+  
+  # Pull centroid of each reach within FACET stream network.
+  # [Lauren] This target took ~1.3 hours to build on my local machine. It
+  # takes a long time because the FACET stream network is so dense. We 
+  # may look for ways to optimize this function in the future.
+  tar_target(
+    p2_facet_network_centroid,
+    get_reach_centroids(p1_facet_network)
+  ),
+  
+  # Process FACET DRB geomorphometry dataset by first Spatially joining the FACET
+  # stream reaches that have their center within an NHDPlusv2 catchment. For each
+  # NHDPlusv2 catchment, subset the FACET segment with the largest shreve magnitude
+  # (if multiple with the same magnitude, break a tie with upstream area). Select 
+  # columns for mean channel width (between 5th and 95th percentiles within reach) 
+  # and floodplain width as described in https://doi.org/10.1088/1748-9326/ac6e47. 
+  # If aggregation to NHM segments is requested, FACET floodplain width and channel
+  # width values for each NHDPlusv2 COMID are summarized as a length-weighted mean 
+  # before calculating channel confinement.
+  tar_target(
+    p2_confinement_facet,
+    calculate_facet_confinement(facet_network = p2_facet_network_centroid, 
+                                facet_width_col = "CW955mean_1D",
+                                facet_floodplain_width_col = "FWmean_1D_FP",
+                                nhd_catchment_polygons = p1_nhd_catchments,
+                                nhd_nhm_xwalk = p1_drb_comids_segs,
+                                network = "nhm",
+                                nhm_identifier_col = "seg_id_nat")
+  ),
+  
+  # The processed FACET channel confinement data are missing confinement
+  # values for 93 NHM segments. The objective of this target is to impute
+  # the NA values with confinement estimates from the nearest upstream 
+  # segment with a non-NA confinement value. 
+  tar_target(
+    p2_confinement_facet_filled,
+    refine_from_neighbors(attr_df = p2_confinement_facet, 
+                          nhm_identifier_col = "seg_id_nat",
+                          attr_name = "confinement_calc_facet",
+                          reach_distances = p1_nhm_distance_matrix,
+                          neighbors = "nearest")
+  ),
   
   # Process Wieczorek NHDPlusv2 attributes referenced to cumulative upstream
   # area; returns object target of class "list". 
