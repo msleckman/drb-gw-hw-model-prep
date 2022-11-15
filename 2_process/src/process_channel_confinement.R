@@ -380,6 +380,9 @@ refine_from_neighbors <- function(attr_df,
       select(all_of(c(nhm_identifier_col, attr_name))) %>%
       rename(attr_value := !!attr_name)
     
+    # calculate global median value of attr_name before NA values are filled
+    attr_value_median <- median(attr_df_select$attr_value, na.rm = TRUE)
+    
     # format reach distance data frame and append subsetted attribute data frame
     cols_keep <- c("from", reach_select)
     seg_matches <- reach_distances %>%
@@ -435,8 +438,23 @@ refine_from_neighbors <- function(attr_df,
                seg_id = reach_select) %>%
         select(seg_id, attr_value, flag_gaps) %>%
         rename(!!nhm_identifier_col := seg_id)
-      
     }
+    
+    # 3) If attribute value is still NA after trying to impute using neighboring
+    # reaches, fill value using the global median.
+    if(length(seg_matches_proc$seg_id_nat) < 1){
+      seg_matches_proc <- seg_matches %>%
+        arrange(abs(target_reach)) %>%
+        # keep reach_select only (distance = 0)
+        slice(1) %>%
+        mutate(flag_gaps = sprintf("%s was filled using median value from non-NA segments.", 
+                                   attr_name),
+               seg_id = reach_select,
+               attr_value = attr_value_median) %>%
+        select(seg_id, attr_value, flag_gaps) %>%
+        rename(!!nhm_identifier_col := seg_id)
+    }
+    
     return(seg_matches_proc)
   }
   
@@ -450,8 +468,8 @@ refine_from_neighbors <- function(attr_df,
     rename(attr_value := !!attr_name) %>%
     # join original attr_df with df containing replacement from neighbors
     left_join(y = ind_reach_replace, by = nhm_identifier_col) %>%
-    # use coalesce function to find first value (from original attr_df or from
-    # `ind_reach_replace` that is not NA.
+    # use coalesce function to find first value that is not NA, from 
+    # original attr_df or from `ind_reach_replace`.
     mutate(!!attr_name := coalesce(attr_value.x, attr_value.y)) %>%
     select(c(names(attr_df)), flag_gaps)
     
