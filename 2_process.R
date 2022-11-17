@@ -90,17 +90,20 @@ p2_targets_list <- list(
                                     weighted_mean_col_name = 'dtb_weighted_mean')
   ),
   
-  # Catchment -- depth_to_bedrock data for each nhm upstream catchment 
-  ## Note: In function, we transform the proj of vector to the raster (4326) to perform weighted average. Retransform to 5070 after computation at end of code chunk.  
+  # Catchment -- depth_to_bedrock data for each NHM catchment. 
+  # Note: In function, we transform the proj of vector to the raster (4326) to 
+  # perform weighted average. Retransform to 5070 after computation at end of code chunk.  
   tar_target(
     p2_depth_to_bedrock_catchments_along_nhm_dissolved,
     raster_in_polygon_weighted_mean(raster = p1_depth_to_bedrock_tif,
                                     nhd_polygon_layer =  p1_nhm_catchments_dissolved,
-                                    feature_id = 'PRMS_segid',
+                                    feature_id = 'seg_id_nat',
                                     weighted_mean_col_name  = 'dtb_weighted_mean') %>% 
-      # append dtb value subsegid = 287_1 because this reach doesn't have an nhd catchment
+      # append dtb value subsegid = 287_1/segidnat 1721. Because this reach doesn't have 
+      # an NHDPlusv2 catchment (and the catchment is presumably very small for this short
+      # reach), we assume that the buffered reach value also applies to the catchment.
       rbind(.,
-            p2_depth_to_bedrock_reaches_along_nhm[p2_depth_to_bedrock_reaches_along_nhm$PRMS_segid == '287_1',]) 
+            p2_depth_to_bedrock_reaches_along_nhm[p2_depth_to_bedrock_reaches_along_nhm$seg_id_nat == '1721',]) 
   ),
   
   ## Soller coarse stratified Sediment processing to buffered-reach scale
