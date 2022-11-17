@@ -279,7 +279,11 @@ p1_targets_list <- list(
     format = "file"
   ),
 
-  # Track depth to bedrock raster dataset in 1_fetch/in
+  # Track depth to bedrock raster dataset in 1_fetch/in.
+  # Note: If you do not have the data in Shangguan_drb_cm_250m_clip_path, 
+  # you must grab it from the project folder. The dataset on caldera has 
+  # already been clipped to the DRB. Original data source: 
+  # http://globalchange.bnu.edu.cn/research/dtb.jsp. 
   tar_target(
     p1_depth_to_bedrock_tif,
     Shangguan_dtb_cm_250m_clip_path,

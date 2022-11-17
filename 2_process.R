@@ -79,21 +79,14 @@ p2_targets_list <- list(
   ),
   
   # Depth to bedrock processing
-  ## Note: If you do not have Shangguan_dtb_cm_250m_clip_path data, you must grab 
-  ## it from the caldera project folder. Dataset accessible on caldera in project 
-  ## folder sub-dir: 1_fetch/in. scp to your local 1_fetch/in folder in this repo 
-  ## in order to run this piece of pipeline original source: 
-  ## http://globalchange.bnu.edu.cn/research/dtb.jsp. 
-  ## Data was clipped to drb before getting added to caldera.
-  
-  # Reach -- depth_to_bedrock data for each nhm reach buffered at 250m  
-  ## Note: In function, we transform the proj of vector to the raster (4326) to 
-  ## perform weighted average. Retransform to 5070 after computation at end of code chunk.  
+  # Reach -- depth_to_bedrock data for each buffered NHM reach.  
+  # Note: In function, we transform the proj of vector to the raster (4326) to 
+  # perform weighted average. Retransform to 5070 after computation at end of code chunk.  
   tar_target(
     p2_depth_to_bedrock_reaches_along_nhm,
     raster_in_polygon_weighted_mean(raster = p1_depth_to_bedrock_tif,
                                     nhd_polygon_layer =  p2_buffered_nhm_reaches,
-                                    feature_id = 'PRMS_segid', 
+                                    feature_id = 'seg_id_nat', 
                                     weighted_mean_col_name = 'dtb_weighted_mean')
   ),
   
