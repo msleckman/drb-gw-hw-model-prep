@@ -31,3 +31,4 @@ PRIORITY,SB_dataset_name,attribute_name,attribute_description,attribute_units,CA
 2,STATSGO_TEXT,SANDAVE,Average percent of sand in soil per NHDPlus version 2 catchment. -9999 denotes NODATA usually water.,percent,area_weighted_mean,https://www.sciencebase.gov/catalog/item/5728dd46e4b0b13d3918a9a7
 2,STATSGO_TEXT,CLAYAVE,Average percent of clay in soil per NHDPlus version 2 catchment. -9999 denotes NODATA usually water.,percent,area_weighted_mean,https://www.sciencebase.gov/catalog/item/5728dd46e4b0b13d3918a9a7
 2,STATSGO_TEXT,SILTAVE,Average percent of silt in soil per NHDPlus version 2 catchment. -9999 denotes NODATA usually water.,percent,area_weighted_mean,https://www.sciencebase.gov/catalog/item/5728dd46e4b0b13d3918a9a7
+2,NLCD11_CNPY,CNPY11_BUFF100,NLCD 2011 percent tree canopy in 100 meter riparian buffer ,percent,area_weighted_mean,https://www.sciencebase.gov/catalog/item/570572e2e4b0d4e2b75718bc
