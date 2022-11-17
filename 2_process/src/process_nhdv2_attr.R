@@ -17,7 +17,7 @@
 #' A data frame containing PRMS_id and columns representing the NHDv2 attribute
 #' data referenced to the cumulative upstream watershed.
 #' 
-process_cumulative_nhdv2_attr <- function(file_path,segs_w_comids,cols){
+process_cumulative_nhdv2_attr <- function(file_path, segs_w_comids, cols){
 
   message(file_path)
   # Read in downloaded data 
@@ -48,8 +48,7 @@ process_cumulative_nhdv2_attr <- function(file_path,segs_w_comids,cols){
     select(c(COMID, starts_with(cols))) %>%
     # join data to {segs_w_comids} data frame by COMID
     right_join(., segs_w_comids,by = "COMID") %>%
-    relocate("PRMS_segid", .before = "COMID") %>%
-    relocate("seg_id_nat", .before = "COMID") %>%
+    relocate(names(segs_w_comids), .before = "COMID") %>%
     select(-COMID)
   
   # Flag columns with undesired flag values (e.g. -9999)
@@ -85,7 +84,11 @@ process_cumulative_nhdv2_attr <- function(file_path,segs_w_comids,cols){
 #' that will be processed. Must contain columns "SB_dataset_name" and
 #' "CAT_aggregation_operation".
 #' @param segs_w_comids data frame containing the PRMS segment ids and the COMIDs 
-#' of interest. Must contain columns "PRMS_segid" and "COMID"
+#' of interest. Must contain column "COMID" as well as a column that represents a
+#' unique segment identifier (defined in `nhm_identifier_col`).
+#' @param nhm_identifier_col character string that represents the unique segment 
+#' identifier. This identifier is used to inform how we aggregate catchment attributes.
+#' Examples include "PRMS_segid" or "seg_id_nat".
 #' @param nhd_lines sf object containing NHDPlusV2 flowlines for area of interest.
 #' nhd_lines must contain columns "COMID", "AREASQKM", and "LENGTHKM".
 #'
@@ -95,7 +98,7 @@ process_cumulative_nhdv2_attr <- function(file_path,segs_w_comids,cols){
 #' catchment, and a data table containing NA diagnostic information for each 
 #' variable and PRMS segment.
 #'
-process_catchment_nhdv2_attr <- function(file_path, vars_table, segs_w_comids, nhd_lines){
+process_catchment_nhdv2_attr <- function(file_path, vars_table, segs_w_comids, nhm_identifier_col, nhd_lines){
   
 
   # Before starting any processing steps, check that this function will work for
@@ -228,7 +231,7 @@ process_catchment_nhdv2_attr <- function(file_path, vars_table, segs_w_comids, n
     # If catchment area is greater than zero, just use AREASQKM.
     mutate(AREASQKM_approx = case_when(AREASQKM == 0 ~ LENGTHKM^2, TRUE ~ AREASQKM)) %>%
     # format columns
-    relocate("PRMS_segid",.before="COMID") 
+    relocate(names(segs_w_comids),.before = everything()) 
   
   # 5b. Handle missing values and flagged values
   # Flag columns with undesired flag values (e.g. -9999)
@@ -239,7 +242,7 @@ process_catchment_nhdv2_attr <- function(file_path, vars_table, segs_w_comids, n
   # Before replacing flagged values, tally the number of -9999's as well as the 
   # proportion of total NHD area where the value is -9999 to use for diagnostics
   flag_tally <- dat_proc %>%
-    group_by(PRMS_segid) %>%
+    group_by(.data[[nhm_identifier_col]]) %>%
     summarize(
       AREASQKM_PRMS = sum(AREASQKM_approx), 
       num_NHDv2cats = length(unique(COMID)),
@@ -267,8 +270,8 @@ process_catchment_nhdv2_attr <- function(file_path, vars_table, segs_w_comids, n
   
   # 6. Scale NHDv2 attributes to PRMS catchments
   dat_proc_aggregated <- dat_proc_out %>%
-    # summarize the data for each unique PRMS_segid
-    group_by(PRMS_segid) %>%
+    # summarize the data for each unique segment identifier
+    group_by(.data[[nhm_identifier_col]]) %>%
     # apply desired aggregation operations to appropriate columns
     summarize(
       AREASQKM_PRMS = sum(AREASQKM_approx), 
@@ -308,12 +311,15 @@ process_catchment_nhdv2_attr <- function(file_path, vars_table, segs_w_comids, n
 #' such that the first element represents a unique attribute dataset and the second
 #' element represents data frames containing the aggregated datasets and the NA 
 #' diagnostics for the attribute dataset. 
+#' @param nhm_identifier_col character string that represents the unique segment 
+#' identifierused in both the upstream and catchment data sets. Examples include 
+#' "PRMS_segid" or "seg_id_nat".
 #' 
 #' @value 
 #' returns a data frame with one row per NHM segment and one column for 
 #' each unique NHDv2 attribute variable.
 #'
-create_nhdv2_attr_table <- function(attr_data_upstream,attr_data_catchment){
+create_nhdv2_attr_table <- function(attr_data_upstream, attr_data_catchment, nhm_identifier_col){
 
   # For the attribute variables scaled to the PRMS catchment-scale, select 
   # the list elements containing the data and omit the list elements 
@@ -322,7 +328,7 @@ create_nhdv2_attr_table <- function(attr_data_upstream,attr_data_catchment){
   
   # loop through both lists simultaneously and join data frames by PRMS_segid
   attr_data_df <- purrr::map2(attr_data_catchment_dat, attr_data_upstream, 
-                              full_join, by = "PRMS_segid") %>%
+                              full_join, by = nhm_identifier_col) %>%
     # bind all columns containing NHDv2 attributes into a single data frame
     Reduce(full_join,.) %>%
     # hide messages that data frames are being joined by column 'PRMS_segid'

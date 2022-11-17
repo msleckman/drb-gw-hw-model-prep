@@ -195,7 +195,10 @@ p2_targets_list <- list(
   tar_target(
     p2_nhdv2_attr_upstream,
     process_cumulative_nhdv2_attr(file_path = p1_sb_attributes_downloaded_csvs,
-                                  segs_w_comids = p1_drb_comids_down,
+                                  segs_w_comids = p1_drb_comids_down %>%
+                                    # for the split segments, just take the more downstream segment
+                                    filter(!PRMS_segid %in% c("3_1", "8_1", "51_1")) %>%
+                                    select(seg_id_nat, COMID),
                                   cols = c("TOT")),
     pattern = map(p1_sb_attributes_downloaded_csvs),
     iteration = "list"
@@ -209,7 +212,8 @@ p2_targets_list <- list(
     p2_nhdv2_attr_catchment,
     process_catchment_nhdv2_attr(file_path = p1_sb_attributes_downloaded_csvs,
                                  vars_table = p1_sb_attributes,
-                                 segs_w_comids = p1_drb_comids_all_tribs,
+                                 segs_w_comids = select(p1_drb_comids_all_tribs, seg_id_nat, COMID),
+                                 nhm_identifier_col = "seg_id_nat",
                                  nhd_lines = p1_nhd_reaches),
     pattern = map(p1_sb_attributes_downloaded_csvs),
     iteration = "list"
@@ -219,7 +223,9 @@ p2_targets_list <- list(
   # upstream and catchment-scale values that have been aggregated to the NHM scale.
   tar_target(
     p2_nhdv2_attr,
-    create_nhdv2_attr_table(p2_nhdv2_attr_upstream, p2_nhdv2_attr_catchment)
+    create_nhdv2_attr_table(attr_data_upstream = p2_nhdv2_attr_upstream, 
+                            attr_data_catchment = p2_nhdv2_attr_catchment, 
+                            nhm_identifier_col = "seg_id_nat")
   ),
   
   # Estimate mean width for each "mainstem" NHDv2 reach. 
