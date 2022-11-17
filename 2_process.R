@@ -59,24 +59,22 @@ p2_targets_list <- list(
   ),
   
   # Create buffer sf object of nhm reaches
-  # Use xwalk nhd reaches along nhm and Dissolve all reaches to NHM scale
+  # Use xwalk nhd reaches along nhm and dissolve all reaches to NHM scale.
   tar_target(
     p2_buffered_nhm_reaches,
-    ## Join with xwalk table to get PRMS_segids for nhm network
+    # Join with xwalk table to get NHM segment identifiers
     p1_nhd_reaches_along_NHM %>% 
       mutate(COMID = as.character(comid)) %>%
-      left_join(.,
-                p1_drb_comids_all_tribs %>%
-                  mutate(COMID = as.character(COMID)),
+      left_join(y = p1_drb_comids_all_tribs,
                 by = 'COMID') %>%
       sf::st_make_valid() %>% 
-      ## Dissolving by PRMS segid - old nrow = 3229, new nrow = 459 
-      group_by(PRMS_segid) %>%
+      # dissolve reaches by seg_id_nat - nrow, old: = 3229; nrow, new: = 456 
+      group_by(seg_id_nat) %>%
       dplyr::summarize(geometry = sf::st_union(geometry)) %>% 
-      ## Buffer reach segments to 250 
-      sf::st_buffer(.,dist = units::set_units(250, m)) %>% 
-      ## creating new col with area of buffer - useful for downstream targets that uses buffered reaches
-      mutate(total_reach_buffer_area_km2 = units::set_units(st_area(.), km^2)) %>% 
+      # create 250 meter buffer around each reach
+      sf::st_buffer(., dist = units::set_units(250, m)) %>% 
+      # create new col with area of buffer - useful for downstream targets that use buffered reaches
+      mutate(total_reach_buffer_area_km2 = units::set_units(sf::st_area(.), km^2)) %>% 
       relocate(geometry, .after = last_col())
   ),
   
