@@ -106,13 +106,13 @@ p2_targets_list <- list(
             p2_depth_to_bedrock_reaches_along_nhm[p2_depth_to_bedrock_reaches_along_nhm$seg_id_nat == '1721',]) 
   ),
   
-  ## Soller coarse stratified Sediment processing to buffered-reach scale
+  # Process Soller et al. coarse stratified sediments to the scale of the buffered NHM segments.
   tar_target(
     p2_soller_coarse_sediment_reaches_nhm,
     coarse_sediment_area_calc(buffered_reaches_sf = p2_buffered_nhm_reaches,
                               buffered_reaches_area_col = 'total_reach_buffer_area_km2',
                               coarse_sediments_area_sf = p1_soller_coarse_sediment_drb_sf,
-                              prms_col = 'PRMS_segid')
+                              prms_col = 'seg_id_nat')
     ),
   
   # Process McManamay channel confinement dataset, including reaggregating from
