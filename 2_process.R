@@ -59,66 +59,60 @@ p2_targets_list <- list(
   ),
   
   # Create buffer sf object of nhm reaches
-  # Use xwalk nhd reaches along nhm and Dissolve all reaches to NHM scale
+  # Use xwalk nhd reaches along nhm and dissolve all reaches to NHM scale.
   tar_target(
     p2_buffered_nhm_reaches,
-    ## Join with xwalk table to get PRMS_segids for nhm network
+    # Join with xwalk table to get NHM segment identifiers
     p1_nhd_reaches_along_NHM %>% 
       mutate(COMID = as.character(comid)) %>%
-      left_join(.,
-                p1_drb_comids_all_tribs %>%
-                  mutate(COMID = as.character(COMID)),
+      left_join(y = p1_drb_comids_all_tribs,
                 by = 'COMID') %>%
       sf::st_make_valid() %>% 
-      ## Dissolving by PRMS segid - old nrow = 3229, new nrow = 459 
-      group_by(PRMS_segid) %>%
+      # dissolve reaches by seg_id_nat - nrow, old: = 3229; nrow, new: = 456 
+      group_by(seg_id_nat) %>%
       dplyr::summarize(geometry = sf::st_union(geometry)) %>% 
-      ## Buffer reach segments to 250 
-      sf::st_buffer(.,dist = units::set_units(250, m)) %>% 
-      ## creating new col with area of buffer - useful for downstream targets that uses buffered reaches
-      mutate(total_reach_buffer_area_km2 = units::set_units(st_area(.), km^2)) %>% 
+      # create 250 meter buffer around each reach
+      sf::st_buffer(., dist = units::set_units(250, m)) %>% 
+      # create new col with area of buffer - useful for downstream targets that use buffered reaches
+      mutate(total_reach_buffer_area_km2 = units::set_units(sf::st_area(.), km^2)) %>% 
       relocate(geometry, .after = last_col())
   ),
   
   # Depth to bedrock processing
-  ## Note: If you do not have Shangguan_dtb_cm_250m_clip_path data, you must grab 
-  ## it from the caldera project folder. Dataset accessible on caldera in project 
-  ## folder sub-dir: 1_fetch/in. scp to your local 1_fetch/in folder in this repo 
-  ## in order to run this piece of pipeline original source: 
-  ## http://globalchange.bnu.edu.cn/research/dtb.jsp. 
-  ## Data was clipped to drb before getting added to caldera.
-  
-  # Reach -- depth_to_bedrock data for each nhm reach buffered at 250m  
-  ## Note: In function, we transform the proj of vector to the raster (4326) to 
-  ## perform weighted average. Retransform to 5070 after computation at end of code chunk.  
+  # Reach -- depth_to_bedrock data for each buffered NHM reach.  
+  # Note: In function, we transform the proj of vector to the raster (4326) to 
+  # perform weighted average. Retransform to 5070 after computation at end of code chunk.  
   tar_target(
     p2_depth_to_bedrock_reaches_along_nhm,
     raster_in_polygon_weighted_mean(raster = p1_depth_to_bedrock_tif,
                                     nhd_polygon_layer =  p2_buffered_nhm_reaches,
-                                    feature_id = 'PRMS_segid', 
+                                    feature_id = 'seg_id_nat', 
                                     weighted_mean_col_name = 'dtb_weighted_mean')
   ),
   
-  # Catchment -- depth_to_bedrock data for each nhm upstream catchment 
-  ## Note: In function, we transform the proj of vector to the raster (4326) to perform weighted average. Retransform to 5070 after computation at end of code chunk.  
+  # Catchment -- depth_to_bedrock data for each NHM catchment. 
+  # Note: In function, we transform the proj of vector to the raster (4326) to 
+  # perform weighted average. Retransform to 5070 after computation at end of code chunk.  
   tar_target(
     p2_depth_to_bedrock_catchments_along_nhm_dissolved,
     raster_in_polygon_weighted_mean(raster = p1_depth_to_bedrock_tif,
                                     nhd_polygon_layer =  p1_nhm_catchments_dissolved,
-                                    feature_id = 'PRMS_segid',
+                                    feature_id = 'seg_id_nat',
                                     weighted_mean_col_name  = 'dtb_weighted_mean') %>% 
-      # append dtb value subsegid = 287_1 because this reach doesn't have an nhd catchment
+      # append dtb value subsegid = 287_1/segidnat 1721. Because this reach doesn't have 
+      # an NHDPlusv2 catchment (and the catchment is presumably very small for this short
+      # reach), we assume that the buffered reach value also applies to the catchment.
       rbind(.,
-            p2_depth_to_bedrock_reaches_along_nhm[p2_depth_to_bedrock_reaches_along_nhm$PRMS_segid == '287_1',]) 
+            p2_depth_to_bedrock_reaches_along_nhm[p2_depth_to_bedrock_reaches_along_nhm$seg_id_nat == '1721',]) 
   ),
   
-  ## Soller coarse stratified Sediment processing to buffered-reach scale
+  # Process Soller et al. coarse stratified sediments to the scale of the buffered NHM segments.
   tar_target(
     p2_soller_coarse_sediment_reaches_nhm,
     coarse_sediment_area_calc(buffered_reaches_sf = p2_buffered_nhm_reaches,
                               buffered_reaches_area_col = 'total_reach_buffer_area_km2',
                               coarse_sediments_area_sf = p1_soller_coarse_sediment_drb_sf,
-                              prms_col = 'PRMS_segid')
+                              prms_col = 'seg_id_nat')
     ),
   
   # Process McManamay channel confinement dataset, including reaggregating from
@@ -201,7 +195,10 @@ p2_targets_list <- list(
   tar_target(
     p2_nhdv2_attr_upstream,
     process_cumulative_nhdv2_attr(file_path = p1_sb_attributes_downloaded_csvs,
-                                  segs_w_comids = p1_drb_comids_down,
+                                  segs_w_comids = p1_drb_comids_down %>%
+                                    # for the split segments, just take the more downstream segment
+                                    filter(!PRMS_segid %in% c("3_1", "8_1", "51_1")) %>%
+                                    select(seg_id_nat, COMID),
                                   cols = c("TOT")),
     pattern = map(p1_sb_attributes_downloaded_csvs),
     iteration = "list"
@@ -215,7 +212,8 @@ p2_targets_list <- list(
     p2_nhdv2_attr_catchment,
     process_catchment_nhdv2_attr(file_path = p1_sb_attributes_downloaded_csvs,
                                  vars_table = p1_sb_attributes,
-                                 segs_w_comids = p1_drb_comids_all_tribs,
+                                 segs_w_comids = select(p1_drb_comids_all_tribs, seg_id_nat, COMID),
+                                 nhm_identifier_col = "seg_id_nat",
                                  nhd_lines = p1_nhd_reaches),
     pattern = map(p1_sb_attributes_downloaded_csvs),
     iteration = "list"
@@ -225,7 +223,9 @@ p2_targets_list <- list(
   # upstream and catchment-scale values that have been aggregated to the NHM scale.
   tar_target(
     p2_nhdv2_attr,
-    create_nhdv2_attr_table(p2_nhdv2_attr_upstream, p2_nhdv2_attr_catchment)
+    create_nhdv2_attr_table(attr_data_upstream = p2_nhdv2_attr_upstream, 
+                            attr_data_catchment = p2_nhdv2_attr_catchment, 
+                            nhm_identifier_col = "seg_id_nat")
   ),
   
   # Estimate mean width for each "mainstem" NHDv2 reach. 

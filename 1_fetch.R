@@ -73,13 +73,17 @@ p1_targets_list <- list(
   ),
   
   # Dissolve NHDPlusv2 catchments to create a single catchment polygon for
-  # each NHM segment (analogous to HRU).
+  # each NHM segment (analogous to HRU). Note that we are aggregating by
+  # seg_id_nat, so split subsegid's (e.g. 3_1, 3_2; 8_1, 8_2; 152_1, 152_2)
+  # will be combined. We end up with 455 catchments instead of 456 because
+  # one very short segment, subsegid 287_1/seg_id_nat 1721, does not have an 
+  # NHDPlusv2 catchment.
   tar_target(
     p1_nhm_catchments_dissolved,
-    left_join(p1_nhd_catchments %>% mutate(COMID = as.character(COMID)),
-              p1_drb_comids_all_tribs %>% mutate(COMID = as.character(COMID)),
+    left_join(x = mutate(p1_nhd_catchments, COMID = as.character(COMID)),
+              y = p1_drb_comids_all_tribs,
               by = 'COMID') %>%
-      group_by(PRMS_segid) %>%
+      group_by(seg_id_nat) %>%
       dplyr::summarize(geometry = sf::st_union(geometry))
   ),
   
@@ -279,7 +283,11 @@ p1_targets_list <- list(
     format = "file"
   ),
 
-  # Track depth to bedrock raster dataset in 1_fetch/in
+  # Track depth to bedrock raster dataset in 1_fetch/in.
+  # Note: If you do not have the data in Shangguan_drb_cm_250m_clip_path, 
+  # you must grab it from the project folder. The dataset on caldera has 
+  # already been clipped to the DRB. Original data source: 
+  # http://globalchange.bnu.edu.cn/research/dtb.jsp. 
   tar_target(
     p1_depth_to_bedrock_tif,
     Shangguan_dtb_cm_250m_clip_path,
