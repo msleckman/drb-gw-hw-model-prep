@@ -428,6 +428,26 @@ p1_targets_list <- list(
         select(UniqueID, HUC4, geometry) %>%
         left_join(p1_facet_geomorph_metrics, by = "UniqueID")
     }
+  ),
+  
+  # Track outputs from MODFLOW_extraction workflow
+  tar_target(
+    p1_modflow_params_feather,
+    "1_fetch/in/data_zell2020_wrr/MODFLOW_params_NHM_zell2020_wrr_02.feather"
+  ),
+  tar_target(
+    p1_modflow_discharge_feather,
+    "1_fetch/in/data_zell2020_wrr/MODFLOW_Discharge_NHM_zell2020_wrr_02.feather"
+  ),
+  
+  # Read in outputs from MODFLOW_extraction workflow
+  tar_target(
+    p1_modflow_params,
+    arrow::read_feather(p1_modflow_params_feather)
+  ),
+  tar_target(
+    p1_modflow_discharge,
+    arrow::read_feather(p1_modflow_discharge_feather)
   )
   
 )
