@@ -358,14 +358,36 @@ p2_targets_list <- list(
     p2_static_inputs_nhd_formatted %>%
       group_by(seg_id_nat) %>%
       summarize(seg_width_empirical = max(seg_width_empirical),
-                .groups = "drop") %>%
-      mutate(seg_id_nat = as.integer(seg_id_nat))
+                .groups = "drop")
+  ),
+  
+  # Combine NHM-scale river and catchment attributes into a single data frame
+  tar_target(
+    p2_static_inputs_nhm_combined,
+    p2_static_inputs_nhm_formatted %>%
+      left_join(y = p2_static_inputs_prms, by = "seg_id_nat") %>%
+      left_join(y = p2_depth_to_bedrock_reaches_along_nhm %>%
+                  sf::st_drop_geometry() %>%
+                  rename(dtb_weighted_mean_reach = dtb_weighted_mean),
+                by = "seg_id_nat") %>%
+      left_join(y = p2_depth_to_bedrock_catchments_along_nhm_dissolved %>%
+                  sf::st_drop_geometry() %>%
+                  rename(dtb_weighted_mean_catchment = dtb_weighted_mean),
+                by = "seg_id_nat") %>%
+      left_join(y = rename(p2_confinement_mcmanamay_filled, flag_gaps_mcmanamay = flag_gaps), 
+                by = "seg_id_nat") %>%
+      left_join(y = rename(p2_confinement_facet_filled, flag_gaps_facet = flag_gaps), 
+                by = "seg_id_nat") %>%
+      left_join(y = p2_nhdv2_attr, by = "seg_id_nat") %>%
+      mutate(seg_id_nat = as.integer(seg_id_nat)) %>%
+      left_join(y = select(p1_modflow_params, -COMID), by = "seg_id_nat") %>%
+      left_join(y = select(p1_modflow_discharge, -COMID), by = "seg_id_nat")
   ),
   
   # Save a feather file that contains the formatted NHM-scale attributes
   tar_target(
     p2_static_inputs_nhm_formatted_feather,
-    write_feather(p2_static_inputs_nhm_formatted, "2_process/out/nhm_attributes.feather"),
+    write_feather(p2_static_inputs_nhm_combined, "2_process/out/nhm_attributes.feather"),
     format = "file"
   )
   
