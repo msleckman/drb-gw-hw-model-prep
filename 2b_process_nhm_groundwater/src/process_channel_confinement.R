@@ -431,7 +431,7 @@ refine_from_neighbors <- function(attr_df,
         arrange(abs(target_reach)) %>%
         # only consider neighboring segments that have a non-NA value
         filter(!is.na(attr_value)) %>%
-        # select nearest [downstream] neighbor
+        # select nearest neighbor
         slice(1) %>%
         mutate(flag_gaps = sprintf("%s was filled from neighbors: %s (%s km away).", 
                                    attr_name, .data[[nhm_identifier_col]], round(abs(target_reach)/1000,1)),
