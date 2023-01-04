@@ -4,7 +4,11 @@ Code repo to prepare groundwater and headwater-related datasets for modeling riv
 This repo contains a targets pipeline for compiling datasets and a snakemake workflow for extracting simulated groundwater discharge from a MODFLOW groundwater model
 
 ## Extracting the catchment / reach attributes
-The scripts to compile the catchment attributes use an R targets pipeline that is initialized with the "_targets.R" file in the main directory.  
+The scripts to compile the catchment attributes use an R targets pipeline that is initialized with the "_targets.R" file in the main directory. The targets pipeline is divided into three phases that divide the workflow:
+
+1. **1_fetch**: Download raw or pre-processed datasets that will be used to compile catchment/reach attributes for both sets of model experiments represented in this pipeline (nhd-downscaling and nhm-groundwater).
+2. **2a_process_nhd_downscaling**: Process the catchment/reach attributes to the NHDPlusv2 scale. These attributes are compiled for those NHDPlusv2 flowlines that overlap the river network used by the National Hydrologic Model (NHM) and therefore many smaller streams in the DRB are excluded. The compiled NHDPlusv2-scale attributes are used to evaluate a neural network model that is pre-trained at the NHM-resolution but makes predictions on the more highly-resolved NHDPlusv2 network. 
+3. **2b_process_nhm_groundwater**: Process the catchment/reach attributes to the NHM scale. The compiled dataset includes geomorphic, hydrologic, geologic, and land cover attributes hypothesized to influence groundwater-surface water interactions and/or the influence of groundwater discharge on surface water temperatures. The NHM groundwater attributes are used as input features to a neural network model that predicts daily water temperature for 456 NHM river segments in the DRB. 
 
 Note that the pipeline depends on temperature data compiled as part of the DRB temperature forecasting project. Temperature data are contained in a [data release](https://www.sciencebase.gov/catalog/item/623e4418d34e915b67d7dd78) on ScienceBase.
 
