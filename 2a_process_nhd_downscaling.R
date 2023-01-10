@@ -94,6 +94,15 @@ p2a_targets_list <- list(
       select(seg_id_nat, date, seginc_potet)
   ),
   
+  # Track the .py script as a file target so that downstream targets rebuild
+  # if the .py script is edited. We do this because targets does not seem to 
+  # automatically detect changes in functions within .py scripts.
+  tar_target(
+    p2a_py_file,
+    "2a_process_nhd_downscaling/src/subset_nc_to_comid.py",
+    format = "file"
+  ),
+  
   # Subset the DRB meteorological data to only include the NHDPlusv2 catchments 
   # (COMID) that intersect the NHM segments. `subset_nc_to_comid()` originally
   # developed by Jeff Sadler as part of the PGDL-DO project:
@@ -102,7 +111,7 @@ p2a_targets_list <- list(
   tar_target(
     p2a_met_data_nhd_mainstem_reaches,
     {
-      reticulate::source_python("2a_process_nhd_downscaling/src/subset_nc_to_comid.py")
+      reticulate::source_python(p2a_py_file)
       subset_nc_to_comids(p1_drb_nhd_gridmet, 
                           p2a_dendritic_nhd_reaches_along_NHM_w_cats$comid) %>%
         as_tibble() %>%
