@@ -195,6 +195,11 @@ p2b_targets_list <- list(
     p2b_static_inputs_nhm_combined,
     p2b_static_inputs_nhm_formatted %>%
       left_join(y = p2a_static_inputs_prms, by = "seg_id_nat") %>%
+      left_join(y = p2b_soller_coarse_sediment_reaches_nhm  %>%
+                  sf::st_drop_geometry() %>% 
+                  select(seg_id_nat, cs_area_proportion) %>% 
+                  rename(prop_reach_w_coarse_sediment = cs_area_proportion),
+                by = "seg_id_nat") %>%
       left_join(y = p2b_depth_to_bedrock_reaches_along_nhm %>%
                   sf::st_drop_geometry() %>%
                   rename(dtb_weighted_mean_reach = dtb_weighted_mean),
@@ -216,7 +221,7 @@ p2b_targets_list <- list(
   # Save a feather file that contains the formatted NHM-scale attributes
   tar_target(
     p2b_static_inputs_nhm_formatted_feather,
-    write_feather(p2b_static_inputs_nhm_combined, "2b_process_nhm_groundwater/out/nhm_attributes.feather"),
+    write_feather(p2b_static_inputs_nhm_combined, sprintf("2b_process_nhm_groundwater/out/nhm_attributes_%s.feather", format(Sys.Date(), "%Y%m%d"))),
     format = "file"
   )
   
