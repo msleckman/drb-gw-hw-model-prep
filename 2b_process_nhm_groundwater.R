@@ -1,10 +1,82 @@
-source("2a_process_nhd_downscaling/src/write_data.R")
-source('2b_process_nhm_groundwater/src/raster_in_polygon_weighted_mean.R')
-source("2b_process_nhm_groundwater/src/coarse_stratified_sediment_processing.R")
-source("2b_process_nhm_groundwater/src/process_channel_confinement.R")
-source("2b_process_nhm_groundwater/src/process_nhdv2_attr.R")
+source("2_process/src/estimate_mean_width.R")
+source("2_process/src/combine_nhd_input_drivers.R")
+source("2_process/src/write_data.R")
+source('2_process/src/raster_in_polygon_weighted_mean.R')
+source("2_process/src/coarse_stratified_sediment_processing.R")
+source("2_process/src/process_channel_confinement.R")
+source("2_process/src/process_nhdv2_attr.R")
 
 p2b_targets_list <- list(
+  
+  # Pull static segment attributes from PRMS SNTemp model driver data
+  tar_target(
+    p2a_static_inputs_prms,
+    p1_sntemp_input_output %>%
+      group_by(seg_id_nat) %>%
+      summarize(seg_elev = unique(seg_elev),
+                seg_slope = unique(seg_slope),
+                seg_width = mean(seg_width, na.rm = TRUE)) %>%
+      mutate(seg_id_nat = as.character(seg_id_nat)) %>%
+      select(seg_id_nat, seg_elev, seg_slope, seg_width)
+  ),
+  
+  
+  # Subset NHDv2 reaches that overlap the NHM network to only include those 
+  # that have a corresponding catchment (and meteorological data)
+  tar_target(
+    p2a_dendritic_nhd_reaches_along_NHM_w_cats,
+    p1_dendritic_nhd_reaches_along_NHM %>%
+      filter(areasqkm > 0)
+  ),
+  
+  # Estimate mean width for each "mainstem" NHDv2 reach. 
+  # Note that one NHM segment, segidnat 1721 (subsegid 287_1) is not included
+  # in the dendritic nhd reaches w cats data frame because the only COMID that
+  # intersects the segment (COMID 4188275) does not have an NHD catchment area. 
+  # So in addition to estimating width for the COMIDs represented in 
+  # p2a_dendritic_nhd_reaches_along_NHM_w_cats, we also want to estimate width 
+  # for COMID 4188275.
+  tar_target(
+    p2a_nhd_mainstem_reaches_w_width,
+    {
+      nhd_lines <- bind_rows(p2a_dendritic_nhd_reaches_along_NHM_w_cats,
+                             filter(p1_dendritic_nhd_reaches_along_NHM,
+                                    comid == "4188275"))
+      estimate_mean_width(nhd_lines, 
+                          estimation_method = 'nwis',
+                          network_pos_variable = 'arbolate_sum',
+                          ref_gages = p1_ref_gages_sf)
+    }
+  ),
+  
+  # Compile river-dl static input drivers at NHDv2 resolution, including river 
+  # width (m) slope (unitless), and min/max elevation (m). Note that these input 
+  # drivers represent "mainstem" NHDv2 reaches only (i.e., those reaches that 
+  # intersect the NHM fabric). Some of the columns in p2a_static_input_drivers_nhd 
+  # are meant to facilitate comparison/EDA between segment attributes at the NHM and 
+  # NHDPlusv2 scales (i.e., seg_slope ~ slope_len_wtd_mean; seg_elev ~ seg_elev_min; 
+  # seg_width ~ seg_width_max). 
+  tar_target(
+    p2a_static_inputs_nhd,
+    prepare_nhd_static_inputs(nhd_flowlines = p2a_nhd_mainstem_reaches_w_width,
+                              prms_inputs = p2a_static_inputs_prms,
+                              nhd_nhm_xwalk = p1_drb_comids_all_tribs)
+  ),
+  
+  
+  # Format NHD-scale static input drivers
+  tar_target(
+    p2a_static_inputs_nhd_formatted,
+    p2a_static_inputs_nhd %>%
+      select(COMID, seg_id_nat, subsegid, 
+             est_width_m, min_elev_m, slope) %>%
+      rename(seg_width_empirical = est_width_m,
+             seg_elev = min_elev_m,
+             seg_slope = slope,
+             seg_id_nat = seg_id_nat)
+  ),
+  
+  
 
   # Create buffer sf object of nhm reaches
   # Use xwalk nhd reaches along nhm and dissolve all reaches to NHM scale.
@@ -221,7 +293,8 @@ p2b_targets_list <- list(
   # Save a feather file that contains the formatted NHM-scale attributes
   tar_target(
     p2b_static_inputs_nhm_formatted_feather,
-    write_feather(p2b_static_inputs_nhm_combined, sprintf("2b_process_nhm_groundwater/out/nhm_attributes_%s.feather", format(Sys.Date(), "%Y%m%d"))),
+    write_feather(p2b_static_inputs_nhm_combined,
+                  sprintf("2b_process_nhm_groundwater/out/nhm_attributes_%s.feather", format(Sys.Date(), "%Y%m%d"))),
     format = "file"
   )
   
