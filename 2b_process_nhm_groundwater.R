@@ -190,7 +190,11 @@ p2b_targets_list <- list(
                 .groups = "drop")
   ),
   
-  # Combine NHM-scale river and catchment attributes into a single data frame
+  # Combine NHM-scale river and catchment attributes into a single data frame.
+  # Note that the resulting data frame for the DRB consists of 456 target
+  # reaches. In Barclay et al. (In Prep, 2023) seg_id_nat 3558 is omitted from 
+  # the network due to odd PRMS-SNTemp values and so Barclay et al. (In Prep, 2023)
+  # predicts temperature on 455 reaches in the DRB. 
   tar_target(
     p2b_static_inputs_nhm_combined,
     p2b_static_inputs_nhm_formatted %>%
