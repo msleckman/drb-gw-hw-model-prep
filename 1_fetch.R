@@ -447,7 +447,8 @@ p1_targets_list <- list(
   ),
   tar_target(
     p1_modflow_discharge,
-    arrow::read_feather(p1_modflow_discharge_feather)
+    arrow::read_feather(p1_modflow_discharge_feather) |> 
+      select(!c(q_std,q_std_per,nDown))
   )
   
 )
