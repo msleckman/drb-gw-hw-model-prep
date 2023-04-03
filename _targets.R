@@ -10,7 +10,7 @@ dir.create("1_fetch/out/mcmanamay2018", showWarnings = FALSE)
 dir.create("1_fetch/out/drb_facet", showWarnings = FALSE)
 
 source("1_fetch.R")
-source("2_process_nhm_groundwater.R")
+source("2_process.R")
 
 # Define crs
 crs <- 5070

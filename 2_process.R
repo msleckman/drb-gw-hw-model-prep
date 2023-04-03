@@ -293,7 +293,7 @@ p2_targets_list <- list(
   # removing attributes that are not needed for final output dataset for model and model archive 
   tar_target(p2_static_inputs_nhm_combined_model_archive, 
              p2_static_inputs_nhm_combined |> select(!all_of(static_inputs_nhm_to_remove))
-             ),
+  ),
   
   
   # Save a feather file that contains the formatted NHM-scale attributes
