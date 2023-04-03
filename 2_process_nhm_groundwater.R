@@ -290,10 +290,16 @@ p2_targets_list <- list(
       left_join(y = select(p1_modflow_discharge, -COMID), by = "seg_id_nat")
   ),
   
+  # removing attributes that are not needed for final output dataset for model and model archive 
+  tar_target(p2_static_inputs_nhm_combined_model_archive, 
+             p2_static_inputs_nhm_combined |> select(!all_of(static_inputs_nhm_to_remove))
+             ),
+  
+  
   # Save a feather file that contains the formatted NHM-scale attributes
   tar_target(
     p2_static_inputs_nhm_formatted_feather,
-    write_feather(p2_static_inputs_nhm_combined,
+    write_feather(p2_static_inputs_nhm_combined_model_archive,
                   sprintf("2b_process_nhm_groundwater/out/nhm_attributes_%s.feather", format(Sys.Date(), "%Y%m%d"))),
     format = "file"
   )

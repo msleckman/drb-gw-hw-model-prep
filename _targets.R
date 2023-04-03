@@ -36,6 +36,14 @@ nhd_statsgo_parent_sbid <- '5728d6ace4b0b13d3918a992'
 ## 1_fetch/in. Clipped drb version already stored in 1_fetch/in on caldera. 
 Shangguan_dtb_cm_250m_clip_path <- '1_fetch/in/Shangguan_dtb_cm_250m_clip/w001001.adf'
 
+## vector of attributes to remove from the final static_inputs_nhm_combined dataframe because they are not ultimately used on any of the downstream model code 
+static_inputs_nhm_to_remove <- c('seg_width_empirical','reach_length_km','lengthkm_mcmanamay_is_na',
+                                 'prop_reach_w_mcmanamay','flag_mcmanamay', 'flag_gaps_mcmanamay','lengthkm',
+                                 'lengthkm_facet_is_na','prop_reach_w_facet','flag_facet','flag_gaps_facet','AREASQKM_PRMS',
+                                 'LENGTHKM_PRMS', 'CAT_KFACT_area_wtd', 'CAT_KFACT_UP_area_wtd', 'CAT_NO10AVE_area_wtd','CAT_NO4AVE_area_wtd',
+                                 'TOT_KFACT', 'TOT_KFACT_UP','TOT_NO10AVE','TOT_NO4AVE','CAT_BEDPERM_4_area_wtd', 'TOT_BEDPERM_4'
+                                 )
+
 # Return the complete list of targets
 c(p1_targets_list, p2_targets_list)
 
