@@ -304,7 +304,7 @@ p2_targets_list <- list(
   tar_target(
     p2_static_inputs_nhm_formatted_feather,
     write_feather(p2_static_inputs_nhm_combined_model_archive,
-                  sprintf("2b_process_nhm_groundwater/out/nhm_attributes_%s.feather", format(Sys.Date(), "%Y%m%d"))),
+                  sprintf("2_process_nhm_groundwater/out/nhm_attributes_%s.feather", format(Sys.Date(), "%Y%m%d"))),
     format = "file"
   )
   
