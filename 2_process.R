@@ -20,64 +20,6 @@ p2_targets_list <- list(
       select(seg_id_nat, seg_elev, seg_slope, seg_width)
   ),
   
-  
-  # Subset NHDv2 reaches that overlap the NHM network to only include those 
-  # that have a corresponding catchment (and meteorological data)
-  tar_target(
-    p2_dendritic_nhd_reaches_along_NHM_w_cats,
-    p1_dendritic_nhd_reaches_along_NHM %>%
-      filter(areasqkm > 0)
-  ),
-  
-  # Estimate mean width for each "mainstem" NHDv2 reach. 
-  # Note that one NHM segment, segidnat 1721 (subsegid 287_1) is not included
-  # in the dendritic nhd reaches w cats data frame because the only COMID that
-  # intersects the segment (COMID 4188275) does not have an NHD catchment area. 
-  # So in addition to estimating width for the COMIDs represented in 
-  # p2_dendritic_nhd_reaches_along_NHM_w_cats, we also want to estimate width 
-  # for COMID 4188275.
-  tar_target(
-    p2_nhd_mainstem_reaches_w_width,
-    {
-      nhd_lines <- bind_rows(p2_dendritic_nhd_reaches_along_NHM_w_cats,
-                             filter(p1_dendritic_nhd_reaches_along_NHM,
-                                    comid == "4188275"))
-      estimate_mean_width(nhd_lines, 
-                          estimation_method = 'nwis',
-                          network_pos_variable = 'arbolate_sum',
-                          ref_gages = p1_ref_gages_sf)
-    }
-  ),
-  
-  # Compile river-dl static input drivers at NHDv2 resolution, including river 
-  # width (m) slope (unitless), and min/max elevation (m). Note that these input 
-  # drivers represent "mainstem" NHDv2 reaches only (i.e., those reaches that 
-  # intersect the NHM fabric). Some of the columns in p2_static_input_drivers_nhd 
-  # are meant to facilitate comparison/EDA between segment attributes at the NHM and 
-  # NHDPlusv2 scales (i.e., seg_slope ~ slope_len_wtd_mean; seg_elev ~ seg_elev_min; 
-  # seg_width ~ seg_width_max). 
-  tar_target(
-    p2_static_inputs_nhd,
-    prepare_nhd_static_inputs(nhd_flowlines = p2_nhd_mainstem_reaches_w_width,
-                              prms_inputs = p2_static_inputs_prms,
-                              nhd_nhm_xwalk = p1_drb_comids_all_tribs)
-  ),
-  
-  
-  # Format NHD-scale static input drivers
-  tar_target(
-    p2_static_inputs_nhd_formatted,
-    p2_static_inputs_nhd %>%
-      select(COMID, seg_id_nat, subsegid, 
-             est_width_m, min_elev_m, slope) %>%
-      rename(seg_width_empirical = est_width_m,
-             seg_elev = min_elev_m,
-             seg_slope = slope,
-             seg_id_nat = seg_id_nat)
-  ),
-  
-  
-  
   # Create buffer sf object of nhm reaches
   # Use xwalk nhd reaches along nhm and dissolve all reaches to NHM scale.
   tar_target(
@@ -247,21 +189,8 @@ p2_targets_list <- list(
                             attr_data_catchment = p2_nhdv2_attr_catchment, 
                             nhm_identifier_col = "seg_id_nat")
   ),
-  
-  # Format NHM-scale attributes, including empirical width
-  # seg_id_nat's 1437, 1442, and 1485 each have two subsegid's attached to one 
-  # seg_id_nat (e.g. 3_1 and 3_2 in the case of seg_id_nat 1437). Since we only
-  # consider the seg_id_nat values when running river-dl, here we assume that 
-  # the sub-segments all have the same width value, which is equal to the maximum
-  # width between the two contributing subsegid's. 
-  tar_target(
-    p2_static_inputs_nhm_formatted_for_merge,
-    p2_static_inputs_nhd_formatted %>%
-      group_by(seg_id_nat) %>%
-      summarize(seg_width_empirical = max(seg_width_empirical),
-                .groups = "drop")
-  ),
-  
+
+ 
   # Combine NHM-scale river and catchment attributes into a single data frame.
   # Note that the resulting data frame for the DRB consists of 456 target
   # reaches. In Barclay et al. (In Prep, 2023) seg_id_nat 3558 is omitted from 
@@ -269,8 +198,7 @@ p2_targets_list <- list(
   # predicts temperature on 455 reaches in the DRB. 
   tar_target(
     p2_static_inputs_nhm_combined,
-    p2_static_inputs_nhm_formatted_for_merge %>%
-      left_join(y = p2_static_inputs_prms, by = "seg_id_nat") %>%
+    p2_static_inputs_prms %>%
       left_join(y = p2_soller_coarse_sediment_reaches_nhm  %>%
                   sf::st_drop_geometry() %>% 
                   select(seg_id_nat, cs_area_proportion) %>% 
@@ -304,7 +232,7 @@ p2_targets_list <- list(
   tar_target(
     p2_static_inputs_nhm_formatted_feather,
     write_feather(p2_static_inputs_nhm_combined_model_archive,
-                  sprintf("2b_process_nhm_groundwater/out/nhm_attributes_%s.feather", format(Sys.Date(), "%Y%m%d"))),
+                  sprintf("2_process/out/nhm_attributes_%s.feather", format(Sys.Date(), "%Y%m%d"))),
     format = "file"
   )
   
